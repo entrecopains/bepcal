@@ -1,0 +1,47 @@
+rules_version = '2';
+// BEPCAL · beveiligingsregels
+// Eigenaar: events@clubcopains.be
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function owner() {
+      return request.auth != null && request.auth.uid == "5bKadTItRadsdPLa6lPoHz24nP52";
+    }
+    function kassaCode() {
+      return get(/databases/$(database)/documents/geheim/kassa).data.code;
+    }
+    // een kassamedewerker = aangemeld toestel dat de juiste, huidige kassacode ingaf
+    function staff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/toegang/$(request.auth.uid))
+        && get(/databases/$(database)/documents/toegang/$(request.auth.uid)).data.code == kassaCode();
+    }
+
+    // kassacode: enkel de eigenaar
+    match /geheim/{d} {
+      allow read, write: if owner();
+    }
+
+    // toegang van een toestel: aanmaken kan alleen met de juiste kassacode
+    match /toegang/{uid} {
+      allow read: if owner() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.code == kassaCode();
+      allow delete: if owner() || (request.auth != null && request.auth.uid == uid);
+    }
+
+    // events, prijzen, correcties: medewerkers lezen, enkel de eigenaar schrijft
+    match /beheer/{rest=**} {
+      allow read: if owner() || staff();
+      allow write: if owner();
+    }
+
+    // registraties: elke medewerker enkel de eigen, de eigenaar alles
+    match /kassa/{uid} {
+      allow read, write: if owner() || (staff() && request.auth.uid == uid);
+      match /events/{ev} {
+        allow read, write: if owner() || (staff() && request.auth.uid == uid);
+      }
+    }
+  }
+}

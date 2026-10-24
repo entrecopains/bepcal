@@ -1,0 +1,16 @@
+{
+  "name": "BEPCAL",
+  "short_name": "BEPCAL",
+  "description": "Kassa en break-even voor Entre Copains",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14111c",
+  "theme_color": "#14111c",
+  "lang": "nl",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

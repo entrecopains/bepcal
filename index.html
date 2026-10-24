@@ -1,0 +1,2158 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14111c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BEPCAL">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>BEPCAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* reset die de Claude-omgeving vroeger gaf */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: one column for the phone at the door; owner dashboard flows to two columns on wide screens. Dark-first (club light). */
+:root{
+  --bg:#14111c; --surface:#1c1826; --surface-2:#262133; --line:#362f47;
+  --fg:#f3eff9; --muted:#a69dbd; --accent:#ffb547; --accent-ink:#1b1206;
+  --cash:#25a874; --card:#5b8cff; --free:#b38c35; --tip:#d07ad6;
+  --good:#3ecf8e; --warn:#f2b63c; --bad:#ff5f6d;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:14px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f5f2f9; --surface:#ffffff; --surface-2:#eee9f5; --line:#dcd4e8;
+  --fg:#1b1625; --muted:#665c7c; --accent:#b8650a; --accent-ink:#ffffff;
+  --cash:#13915a; --card:#2f62d6; --free:#a77a12; --tip:#a640ad;
+  --good:#13915a; --warn:#a96d00; --bad:#cf2b3c; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#f5f2f9; --surface:#ffffff; --surface-2:#eee9f5; --line:#dcd4e8;
+  --fg:#1b1625; --muted:#665c7c; --accent:#b8650a; --accent-ink:#ffffff;
+  --cash:#13915a; --card:#2f62d6; --free:#a77a12; --tip:#a640ad;
+  --good:#13915a; --warn:#a96d00; --bad:#cf2b3c; color-scheme:light}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+*{box-sizing:border-box}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:.01em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.04em}
+.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;background:var(--surface-2);border:1px solid var(--line)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--good)} .pill.pending{color:var(--warn)} .pill.bad{color:var(--bad)} .pill.idle{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+input,select,textarea{font-size:16px!important}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-height:42px;line-height:22px;display:block}
+.grid2.two{align-items:end}
+.pv input{font-size:34px!important}
+select,input[type=text],input[type=number],input[type=date],textarea{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:80px;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted);min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.cols{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:900px){.cols{grid-template-columns:1.25fr 1fr}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.empty{text-align:center;padding:40px 16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h1{font-size:22px}
+
+/* KASSA */
+#kassa .head{display:flex;flex-direction:column;gap:4px}
+#kassa .ev{font-family:var(--display);font-size:18px}
+.pad{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big{border:0;border-radius:20px;min-height:min(30vh,190px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  font-family:var(--display);font-size:clamp(20px,6vw,30px);font-weight:800;color:#fff;letter-spacing:.02em;
+  transition:transform .08s ease, filter .08s ease;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.big span{font-family:var(--body);font-size:14px;font-weight:600;opacity:.85;letter-spacing:0}
+.big{-webkit-touch-callout:none}
+.big:active{transform:scale(.97);filter:brightness(1.15)}
+.big{padding:0 8px;max-width:100%;overflow:hidden}
+.big.card{font-size:clamp(14px,4.4vw,28px);letter-spacing:0}
+.big.cash{background:var(--cash)} .big.card{background:var(--card)} .big.free{background:var(--free)} .big.tip{background:var(--tip)}
+.big:disabled{filter:grayscale(1);opacity:.4}
+.flash{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 18px);transform:translate(-50%,-10px);opacity:0;pointer-events:none;
+  background:var(--fg);color:var(--bg);font-weight:700;border-radius:999px;padding:10px 18px;transition:opacity .15s, transform .15s;z-index:40;white-space:nowrap}
+.flash.show{opacity:1;transform:translate(-50%,0)}
+.mycount{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.dot{padding:0!important;border:0!important;width:9px!important;height:9px!important;min-width:0;display:inline-block!important;border-radius:50%!important;vertical-align:middle;box-shadow:none}
+.dot.cash{background:var(--cash)} .dot.card{background:var(--card)} .dot.free{background:var(--free)} .dot.tip{background:var(--tip)}
+.watch{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
+
+/* lists */
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);min-width:0}
+.row:last-child{border-bottom:0}
+.row .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;min-width:42px}
+.row .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .amt{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.row.void .amt,.row.void .who{text-decoration:line-through;color:var(--muted)}
+.row button.link{background:none;border:0;padding:0;color:var(--accent);font-weight:600;font-size:13px}
+.note{grid-column:2 / -1;font-size:13px;background:var(--surface-2);border-radius:8px;padding:6px 8px;min-width:0;overflow-wrap:anywhere}
+.note.own{border-left:3px solid var(--accent)}
+.tag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;background:var(--surface-2);border:1px solid var(--line);white-space:nowrap}
+.tag.bad{color:var(--bad);border-color:var(--bad)} .tag.warn{color:var(--warn);border-color:var(--warn)} .tag.good{color:var(--good);border-color:var(--good)}
+
+/* OWNER */
+.meter{display:flex;flex-direction:column;gap:10px}
+.meter .figs{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.meter .big-n{font-family:var(--display);font-size:clamp(28px,8vw,44px);font-weight:800;font-variant-numeric:tabular-nums}
+.track{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.track i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .5s ease}
+.track.done i{background:var(--good)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:600px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tile{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile b{font-size:22px;font-variant-numeric:tabular-nums}
+.tile .lab{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-variant-numeric:tabular-nums}
+.kv .tot{font-weight:800;border-top:1px solid var(--line);padding-top:6px}
+.stream{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.stream:last-child{border-bottom:0}
+.stream .fields{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
+.stream.off .fields{display:none}
+.stream .contrib{grid-column:1 / -1;font-size:13px;color:var(--muted)}
+.switch{position:relative;width:44px;height:26px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.switch span{position:absolute;inset:0;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);transition:background .15s}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:transform .15s, background .15s}
+.switch input:checked + span{background:var(--accent)}
+.switch input:checked + span::after{transform:translateX(18px);background:var(--accent-ink)}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:320px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.tipline{font-size:13px;min-height:20px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tbl{overflow-x:auto}
+.report ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.report h3{font-size:14px;margin-top:6px}
+.hl{color:var(--accent);font-weight:700}
+
+/* sheets */
+.sheet{position:fixed;inset:0;background:rgba(10,8,15,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50;
+  padding:0 max(0px,env(safe-area-inset-right,0px)) 0 max(0px,env(safe-area-inset-left,0px))}
+.sheet .in{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:560px;max-height:90vh;overflow:auto;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+@media (min-width:700px){.sheet{align-items:center}.sheet .in{border-radius:18px}}
+.sheet h3{font-size:18px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick button{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:14px 0;font-weight:700;font-size:16px}
+.quick button.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:10px 14px;font-weight:700;white-space:nowrap}
+.seg button.on{background:var(--fg);color:var(--bg)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+/* celebration */
+.party{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;
+  background:radial-gradient(circle at 50% 45%, rgba(62,207,142,.35), rgba(10,8,15,.85) 70%);text-align:center;padding:24px}
+.party h1{font-size:clamp(34px,11vw,72px);font-weight:800;color:#fff;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.party p{color:#fff;font-weight:600;margin:0}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){.party h1{animation:none}.track i{transition:none}.big{transition:none}}
+
+/* tabs & lanes */
+.panel{display:flex;flex-direction:column;gap:16px;max-width:760px;margin:0 auto;width:100%}
+#owner{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+.tabs button{position:relative;border:0;background:transparent;border-radius:12px;padding:12px 2px;font-weight:700;font-size:clamp(10px,2.9vw,13px);overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.tabs button.on{background:var(--surface-2);color:var(--fg)}
+.badge{position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;line-height:18px;padding:0 5px}
+.scen{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.scen:last-child{border-bottom:0}
+.scen b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums;text-align:right;min-width:4ch}
+.scen .or{grid-column:1 / -1;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.lane{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+.lane:last-child{border-bottom:0}
+.lane svg{display:block;width:100%;height:auto}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.live-dot.on{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent)}
+/* steps, sources, boxes, roles */
+.step{display:flex;align-items:center;gap:10px}
+.step h3{font-size:16px}
+.sn{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:13px;flex:none}
+.src{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.src + .src{margin-top:8px}
+.src.on{border-color:var(--accent)}
+.srchead{display:flex;align-items:center;gap:12px;cursor:pointer}
+.src .fields{display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.src.on .fields{display:grid}
+.note-s{grid-column:1 / -1;margin:0;font-size:12px;color:var(--muted)}
+.checks{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.checks li{display:flex;gap:8px;align-items:center;font-size:14px}
+.checks .ok{color:var(--good)} .checks .no{color:var(--warn)}
+.stepper{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.stepper .btn{padding:14px 16px;font-size:16px}
+.pv{display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--display);font-size:34px;font-weight:800}
+.pv input{width:4.2ch;background:transparent;border:0;border-bottom:2px solid var(--line);border-radius:0;font:inherit;text-align:center;padding:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.boxes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:600px){.boxes{grid-template-columns:repeat(3,1fr)}}
+.box{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.box .lab{font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px}
+.box b{font-size:20px;font-variant-numeric:tabular-nums}
+.box input{padding:6px 8px;font-size:16px;font-weight:700}
+.box .sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.box.res b{font-family:var(--display)}
+.roles{display:grid;gap:12px}
+.role{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:20px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.role b{font-family:var(--display);font-size:20px}
+.role span{color:var(--muted)}
+.pinrow{display:flex;gap:8px}
+.pinrow input{font-size:24px;letter-spacing:.3em;text-align:center}
+.grid2.two{grid-template-columns:1fr 1fr}
+label.f .hint{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.checks .no-t{color:var(--warn);font-size:12px;margin-left:auto}
+.lines{display:flex;flex-direction:column}
+.btn.green{background:var(--cash);color:#fff;border-color:transparent}
+.btn.red{background:transparent;color:var(--bad);border-color:var(--bad)}
+#o-evsel{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:700;border-radius:999px;padding:9px 14px}
+.sum{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:baseline}
+.sum .k{font-size:13px;font-weight:600;color:var(--muted)}
+.sum .v{font-variant-numeric:tabular-nums;text-align:right;font-weight:700;font-size:20px}
+.sum .v.vbig{font-family:var(--display);font-size:clamp(26px,7vw,38px);font-weight:800}
+.sum .rule{grid-column:1 / -1;border-top:1px solid var(--line);margin:6px 0}
+.ln{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.lines .ln:last-child,.card > .ln:last-child{border-bottom:0}
+.ln .sub{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.ln .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.ln .val .sub{font-weight:500}
+.ln.tot{border-top:2px solid var(--fg);border-bottom:0;margin-top:4px}
+.ln .ins{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
+.ln .ins label{flex:1;min-width:120px}
+.lnin{width:9ch;text-align:right;font-weight:700;font-size:16px}
+.big.wide{grid-column:1 / -1;min-height:min(16vh,110px)}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <div class="empty" id="boot"><h1>BEPCAL</h1><p class="muted">Verbinden…</p></div>
+</div>
+
+<div class="flash" id="flash" role="status" aria-live="polite"></div>
+
+<!-- ROLKEUZE -->
+<template id="tpl-role">
+  <section class="wrap" style="max-width:520px">
+    <div class="brand" style="font-size:28px">BEPCAL<small>Kassa &amp; break-even</small></div>
+    <p class="muted" style="margin:0">Wie ben je vanavond?</p>
+    <div class="roles">
+      <button class="role" id="r-kassa"><b>Kassamedewerker</b><span>Naam ingeven, station kiezen en tikken.</span></button>
+      <button class="role" id="r-mgmt"><b>Management</b><span>Avond voorbereiden en alles live opvolgen. Met code.</span></button>
+    </div>
+  </section>
+</template>
+
+<!-- KASSA -->
+<template id="tpl-kassa">
+  <section id="kassa" class="wrap">
+    <div class="bar">
+      <div class="brand">BEPCAL<small id="k-who">Kassa</small></div>
+      <div class="spacer"></div>
+      <span class="pill idle" id="k-sync">Verbinden</span>
+      <button class="btn" id="k-switch">Wissel</button>
+      <button class="btn red" id="k-out">Afmelden</button>
+    </div>
+    <div class="card" id="k-closed" hidden>
+      <h1 id="k-closed-title" style="font-size:20px">De kassa staat dicht</h1>
+      <p class="muted" id="k-closed-sub" style="margin:0">Zodra de organisatie de avond start, verschijnen hier de knoppen.</p>
+    </div>
+    <div id="k-open" hidden class="wrap">
+      <div class="ev" id="k-ev"></div>
+      <div class="pad" id="k-pad"></div>
+      <p class="small muted" style="margin:0">Groep? Hou een knop lang ingedrukt en kies het aantal personen.</p>
+      <p class="watch">Elke tik wordt met tijdstip en jouw naam live doorgestuurd naar de organisatie en op het einde van de avond vergeleken met SumUp en de kassatelling.</p>
+    </div>
+    <div class="card" id="k-report" hidden></div>
+    <div class="card">
+      <div class="bar"><h2>Mijn registraties</h2><div class="spacer"></div><span class="small muted" id="k-mytotal"></span></div>
+      <p class="small muted" style="margin:0">Foutje gemaakt? Tik op <b>Annuleren</b> en geef verplicht de reden. Iets speciaals, zoals een afgesproken prijs? Tik op <b>Notitie</b>.</p>
+      <div class="list" id="k-log"></div>
+    </div>
+  </section>
+</template>
+<template id="tpl-owner">
+  <section id="owner" class="wrap">
+    <div class="bar">
+      <div class="brand">BEPCAL<small>Break-even live</small></div>
+      <div class="spacer"></div>
+      <span class="pill idle" id="o-status">Geen avond</span>
+      <button class="btn" id="o-sound" aria-pressed="false">Geluid uit</button>
+      <button class="btn green" id="g-help">Medewerkersportaal</button>
+      <button class="btn red" id="g-code">Kassacode</button>
+      <button class="btn" id="o-tokassa">Uitloggen</button>
+    </div>
+    <div class="bar">
+      <select id="o-evsel" aria-label="Kies avond" style="flex:1;min-width:0"></select>
+      <button class="btn primary" id="o-new">Nieuwe avond</button>
+    </div>
+
+    <div class="card empty" id="o-empty" hidden>
+      <h1>Nog geen avond</h1>
+      <p class="muted" style="margin:0;max-width:44ch">Maak een avond aan, duid de inkomstenbronnen aan en vul de kosten in. Daarna start je de avond en gaan de knoppen bij de kassa open.</p>
+      <button class="btn primary" id="o-new2">Eerste avond aanmaken</button>
+    </div>
+
+    <div id="o-main" hidden>
+      <div class="panel" data-tab="gegevens">
+        <div class="card" id="g-basis">
+          <div class="step"><span class="sn">1</span><h3>Basis</h3></div>
+          <div class="grid2 two">
+            <label class="f" style="grid-column:1 / -1">Naam van het event<input type="text" id="s-name" data-f="name" maxlength="60"></label>
+            <label class="f">Datum<input type="date" id="s-date" data-f="date"></label>
+            <label class="f">Locatie<input type="text" id="s-loc" data-f="location" maxlength="60" placeholder="Plein Publiek"></label>
+            <label class="f">Beginuur<input type="time" id="s-start" data-f="startTime"></label>
+            <label class="f">Einduur<input type="time" id="s-end" data-f="endTime"></label>
+            <label class="f">Kassa sluit om<input type="time" id="s-close" data-f="closeTime"></label>
+          </div>
+        </div>
+        <div class="card">
+          <div class="step"><span class="sn">2</span><h3>Kassamedewerkers</h3></div>
+          <p class="small muted" style="margin:0">Alleen deze namen kunnen kiezen aan de kassa. Zelf een naam typen kan niet zodra hier namen staan.</p>
+          <div class="bar"><span class="small">Kassacode: <b id="g-kcode">—</b></span><div class="spacer"></div><button class="btn" id="g-kcode-btn">Wijzigen</button></div>
+          <div class="mycount" id="g-staff"></div>
+          <div class="bar"><input type="text" id="g-staff-in" maxlength="30" placeholder="Voornaam" style="flex:1;min-width:0"><button class="btn" id="g-staff-add">Toevoegen</button></div>
+        </div>
+        <div class="card">
+          <div class="step"><span class="sn">3</span><h3>Inkomstenbronnen</h3></div>
+          <p class="small muted" style="margin:0">Duid aan wat er vanavond is. Een bron die je aanzet, gaat open met wat er nodig is.</p>
+          <div id="g-sources"></div>
+          <button class="btn" id="o-addstream" style="align-self:flex-start">+ Andere bron</button>
+        </div>
+        <div class="card" id="g-cost">
+          <div class="step"><span class="sn">4</span><h3>Kosten &amp; kassa</h3></div>
+          <div class="grid2 two">
+            <label class="f"><span>Kosten van de avond (€)<span class="hint">excl. btw</span></span><input type="number" inputmode="decimal" step="1" id="s-cost" data-f="cost"></label>
+            <label class="f"><span>Wisselgeld bij start (€)<span class="hint">in de kassa</span></span><input type="number" inputmode="decimal" step="1" id="s-float" data-f="float"></label>
+          </div>
+        </div>
+        <div class="card" id="g-start"></div>
+        
+        
+        
+        
+        <p class="small muted" style="margin:0" id="s-saved">Alles wordt meteen opgeslagen.</p>
+        
+        
+      </div>
+
+      <div class="panel" data-tab="overzicht" hidden>
+        <div class="card" id="o-price">
+          <div class="bar"><h2>Deurprijs nu</h2><div class="spacer"></div><span class="small muted">cash en Bancontact</span></div>
+          <div class="stepper"><button class="btn" id="p-down" aria-label="Deurprijs 1 euro lager">− €1</button>
+            <label class="pv"><span class="sr">Deurprijs</span>€<input type="number" inputmode="decimal" step="0.5" id="p-val"></label>
+            <button class="btn" id="p-up" aria-label="Deurprijs 1 euro hoger">+ €1</button></div>
+          <div id="p-pending" hidden style="display:flex;flex-direction:column;gap:8px">
+            <span class="small" id="p-live"></span>
+            <button class="btn primary" id="p-send" style="padding:14px;font-size:16px">Doorsturen naar de kassa</button>
+            <button class="btn" id="p-cancel" style="align-self:center;background:transparent;border:0;color:var(--muted)">Annuleren</button>
+          </div>
+          <span class="small muted" id="p-livenote"></span>
+        </div>
+        <div class="card" id="o-sum"></div>
+        <div class="card" id="o-scen-card"><h2 id="o-scen-h">Tot break-even</h2><div id="o-scen"></div></div>
+        <div class="card">
+          <div class="bar"><h2>Per afdeling</h2><div class="spacer"></div><div class="seg" id="vat-seg" role="group" aria-label="Bedragen tonen"><button data-v="ex">Excl. btw</button><button data-v="in">Incl. btw</button></div></div>
+          <p class="small muted" style="margin:0">Dranken, food en andere bronnen met een winstmarge vul je hier zelf in: één bedrag, de totale omzet incl. btw. De rest komt van de kassa.</p>
+          <div class="lines" id="o-omzet"></div>
+        </div>
+      </div>
+
+      <div class="panel" data-tab="live" hidden>
+        <div class="card"><h2>Aan de deur</h2><div class="tiles" id="o-tiles"></div></div>
+        <div class="card">
+          <div class="bar"><h2>Per kassamedewerker</h2><div class="spacer"></div><span class="small muted">Tik op een lijn voor details</span></div>
+          <div class="legend"><span><i class="dot cash"></i>Cash</span><span><i class="dot card"></i>Bancontact</span><span><i class="dot free"></i>Gratis</span></div>
+          <div id="o-lanes"></div>
+        </div>
+        <div class="card">
+          <div class="bar"><h2>Live feed</h2><div class="spacer"></div><span class="small muted">Tik om te corrigeren</span></div>
+          <div class="list" id="o-feed"></div>
+          <button class="btn" id="o-more" hidden>Meer tonen</button>
+        </div>
+      </div>
+
+      <div class="panel" data-tab="opvallend" hidden>
+        <div class="card"><h2>Annulaties, notities &amp; fouten</h2><div id="o-issues"></div></div>
+        <div class="card"><h2>Kassalade</h2><div class="kv" id="o-drawer"></div>
+          <div class="grid2"><label class="f">Geteld bij sluiting (€)<input type="number" inputmode="decimal" step="0.01" id="s-counted" data-f="counted"></label></div>
+          <div id="o-diff"></div>
+        </div>
+        <div class="card">
+          <h2>SumUp-controle</h2>
+          <p class="small muted" style="margin:0">Tot de live SumUp-koppeling er is: exporteer de transacties van deze avond als CSV en laad ze hier. BEPCAL koppelt elke betaling aan een Bancontact-tik en toont per medewerker wat niet klopt.</p>
+          <label class="btn" style="align-self:flex-start">SumUp-CSV laden<input type="file" accept=".csv,text/csv" id="o-csv" hidden></label>
+          <div id="o-map"></div>
+          <div id="o-recon"></div>
+        </div>
+      </div>
+
+      <div class="panel" data-tab="stats" hidden>
+        <div class="card report" id="o-report"></div>
+        <div class="card"><h2>Per kassamedewerker</h2><div class="tbl" id="o-staff"></div></div>
+        <div class="card">
+          <h2>Binnenkomst per kwartier</h2>
+          <div class="legend"><span><i class="dot cash"></i>Cash</span><span><i class="dot card"></i>Bancontact</span><span><i class="dot free"></i>Gratis</span></div>
+          <div class="chart" id="o-chart"></div>
+          <div class="tipline muted" id="o-chart-tip">Tik op een balk voor de details.</div>
+        </div>
+        <div class="card"><h2>Per deurprijs</h2><div class="tbl" id="o-levels"></div></div>
+        <div class="card">
+          <h2>Avond afsluiten</h2>
+          <p class="small muted" style="margin:0">Na het afsluiten staan de knoppen bij de kassa uit, wordt het rapport definitief en ziet elke medewerker haar eigen fouten en verschillen om te verantwoorden.</p>
+          <div class="actions" style="justify-content:flex-start"><button class="btn danger" id="o-close">Avond afsluiten</button><button class="btn" id="o-csvout">Registraties downloaden</button><button class="btn red" id="o-del">Event verwijderen</button></div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="tabs" id="o-tabs" hidden aria-label="Onderdelen">
+      <button data-t="gegevens">Gegevens</button>
+      <button data-t="overzicht">Overzicht</button>
+      <button data-t="live">Live</button>
+      <button data-t="opvallend">Opvallend<span class="badge" id="o-badge" hidden></span></button>
+      <button data-t="stats">Statistieken</button>
+    </nav>
+  </section>
+</template>
+
+<script type="module">
+import { firebaseConfig, OWNER_UID } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc as fdoc, collection as fcol, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot as fsnap, query as fquery, orderBy as forder, limit as flimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ---------- Firebase-koppeling ---------- */
+const BEP = { ready:false };
+const configured = firebaseConfig && firebaseConfig.apiKey && !/PLAK|XXX/.test(firebaseConfig.apiKey) && OWNER_UID && !/PLAK|XXX/.test(OWNER_UID);
+if (configured){
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
+  let fs;
+  try{ fs = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }), ignoreUndefinedProperties: true }); }
+  catch{ fs = initializeFirestore(fbApp, { ignoreUndefinedProperties: true }); }
+  const CODES = {"permission-denied":"invalid_argument","not-found":"invalid_argument","invalid-argument":"invalid_argument","failed-precondition":"invalid_argument","resource-exhausted":"resource_exhausted","unavailable":"unavailable","deadline-exceeded":"unavailable"};
+  const mapErr = e => ({ code: CODES[e && e.code] || "unavailable", raw: e && e.code, message: e && e.message });
+  const wrapDoc = s => ({ id: s.id, exists: s.exists(), data: () => s.exists() ? s.data() : undefined, metadata: s.metadata });
+  const newId = () => fdoc(fcol(fs, "_")).id;
+  const dref = p => { const r = fdoc(fs, p); return {
+    id: r.id, path: p,
+    get: () => getDoc(r).then(wrapDoc).catch(e => { throw mapErr(e); }),
+    set: d => setDoc(r, d).catch(e => { throw mapErr(e); }),
+    update: d => updateDoc(r, d).catch(e => { throw mapErr(e); }),
+    delete: () => deleteDoc(r).catch(e => { throw mapErr(e); }),
+    onSnapshot: (next, er) => fsnap(r, s => next(wrapDoc(s)), e => er && er(mapErr(e))),
+    collection: sub => cref(p + "/" + sub)
+  }; };
+  const qref = (p, cons) => ({
+    orderBy: (f, d) => qref(p, cons.concat([forder(f, d || "asc")])),
+    limit: n => qref(p, cons.concat([flimit(n)])),
+    onSnapshot: (next, er) => fsnap(fquery(fcol(fs, p), ...cons), q => next({ docs: q.docs.map(wrapDoc), size: q.size, empty: q.empty }), e => er && er(mapErr(e)))
+  });
+  const cref = p => Object.assign(qref(p, []), { path: p, doc: id => dref(p + "/" + (id || newId())) });
+  Object.assign(BEP, {
+    ready: true, ownerUid: OWNER_UID, auth,
+    db: { doc: dref, collection: cref },
+    onAuth: cb => onAuthStateChanged(auth, cb),
+    signInAnon: () => signInAnonymously(auth),
+    signInEmail: (e, p) => signInWithEmailAndPassword(auth, e, p),
+    signOut: () => signOut(auth),
+    resetPassword: e => sendPasswordResetEmail(auth, e),
+    reauth: p => reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, p))
+  });
+}
+
+(() => {
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur = n => new Intl.NumberFormat("nl-BE",{style:"currency",currency:"EUR"}).format(Number(n)||0);
+const eur0 = n => new Intl.NumberFormat("nl-BE",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(Number(n)||0);
+const hm = t => new Date(t).toLocaleTimeString("nl-BE",{hour:"2-digit",minute:"2-digit"});
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const num = v => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : 0; };
+const blank = v => v === null || v === undefined || v === "";
+const rid = () => Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-5);
+const LS = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch{ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+const SS = {
+  get(k){ try{ return sessionStorage.getItem(k); }catch{ return null; } },
+  set(k,v){ try{ sessionStorage.setItem(k, v); }catch{} }
+};
+const KIND = {cash:"Cash", card:"Bancontact", free:"Gratis", tip:"Fooi"};
+const VATS = [0,6,12,21];
+const WINDOW = 5*60*1000;
+
+/* inkomstenbronnen: vaste soorten + eigen bronnen */
+const SRC = {
+  door:  {name:"Deurverkoop", hint:"De kassa aan de inkom tikt cash, Bancontact en gratis", fixed:true, station:"Inkom"},
+  online:{name:"Online tickets", hint:"Via het ticketplatform", fixed:true},
+  bar:   {name:"Dranken", hint:"Omzet vul je zelf in tijdens de avond"},
+  wc:    {name:"WC", hint:"Een WC-kassa tikt aan deze prijs, of je vult zelf het aantal bezoeken in", fixed:true, station:"WC"},
+  food:  {name:"Food", hint:"Een foodkassa tikt bedragen, of je vult zelf de omzet in", station:"Foodstand"}
+};
+const ORDER = ["door","online","bar","wc","food"];
+function defaultStreams(){ return [
+  {id:"door", on:true, vat:21},
+  {id:"online", on:false, vat:21, count:0, amount:0, platform:"", link:""},
+  {id:"bar", on:false, vat:21, margin:null, amount:0},
+  {id:"wc", on:false, vat:21, price:null, count:0},
+  {id:"food", on:false, vat:21, margin:null, amount:0}
+]; }
+function streamsOf(ev){
+  const raw = (ev && Array.isArray(ev.streams)) ? ev.streams : [];
+  const out = [];
+  ORDER.forEach(id => { const s = raw.find(x => x.id === id); out.push(Object.assign({}, defaultStreams().find(d => d.id === id), s ? clean({...s, name:undefined, auto:undefined, hasCount:undefined}) : {})); });
+  raw.filter(s => !ORDER.includes(s.id)).forEach(s => out.push(Object.assign({custom:true, on:true, vat:21, margin:null, amount:0}, s, {custom:true})));
+  return out;
+}
+const sName = s => s.custom ? (s.name || "Extra") : SRC[s.id].name;
+const sFixed = s => s.custom ? s.mode === "price" : !!(SRC[s.id] && SRC[s.id].fixed);
+const priceList = v => String(v ?? "").split(/[;\/|]|\s+en\s+|\s{2,}/).map(x => num(x)).filter(x => x > 0);
+const sMargin = s => sFixed(s) ? 100 : (blank(s.margin) ? null : num(s.margin));
+const isStation = s => s.on && (s.id === "door" || s.id === "wc" || s.id === "food" || (s.custom && s.kassa));
+const stationLabel = s => s.custom ? sName(s) : SRC[s.id].station;
+function clean(o){ const r = {}; for (const k in o) if (o[k] !== undefined) r[k] = o[k]; return r; }
+
+const S = {
+  db:null, user:null, uid:null, isOwner:false, mode:"role",
+  config:null, events:[], cashiers:{}, kd:{}, corr:{}, recon:{}, names:{},
+  sel:null, subs:{}, feedLimit:40, sound:false, audio:null,
+  k:{ ev:null, entries:[], explain:{}, writing:false, again:false, synced:"", retry:null, denied:false, name:"", station:"" },
+  beWritten:{}, pend:{}
+};
+
+function flash(msg){ const f = $("#flash"); f.textContent = msg; f.classList.add("show"); clearTimeout(flash.t); flash.t = setTimeout(()=>f.classList.remove("show"), 1200); }
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch{} }
+function err(e){ console.warn("db", e && e.code, e && e.message); }
+
+/* ---------- boot ---------- */
+async function boot(){
+  const app = $("#app");
+  if (!BEP.ready){ app.innerHTML = '<div class="empty"><h1>BEPCAL</h1><p class="muted" style="max-width:42ch">Deze installatie is nog niet gekoppeld aan Firebase. Vul de gegevens in het bestand config.js in en zet de app opnieuw online.</p></div>'; return; }
+  S.db = BEP.db;
+  S.k.name = LS.get("bep:name", ""); S.k.station = LS.get("bep:station", ""); S.k.evId = LS.get("bep:ev", "");
+  document.addEventListener("pointerdown", unlockAudio);
+  window.addEventListener("offline", () => setSync("pending", "Offline · wordt bewaard"));
+  window.addEventListener("online", () => { if (S.mode === "kassa") flush(); });
+  BEP.onAuth(u => {
+    const uid = u ? u.uid : null;
+    if (S.authInit && uid === S.authUid) return;
+    S.authInit = true; S.authUid = uid; S.uid = uid;
+    S.isOwner = !!u && uid === BEP.ownerUid;
+    S.isAnon = !!u && u.isAnonymous;
+    S.ownerEmail = S.isOwner ? u.email : "";
+    stopData();
+    if (u && (S.isOwner || LS.get("bep:joined", "") === uid)) startData();
+    const role = LS.get("bep:role", "");
+    if (S.isOwner && role === "mgmt") S.mode = "owner";
+    else if (u && role === "kassa" && S.k.name && S.dataUid === uid) S.mode = "kassa";
+    else S.mode = "role";
+    mount();
+  });
+}
+function startData(){
+  if (S.dataUid === S.uid && S.dataSubs && S.dataSubs.length) return;
+  stopData();
+  S.dataUid = S.uid; S.loaded = false;
+  S.dataSubs = [
+    S.db.doc("beheer/config").onSnapshot(s => { S.config = s.exists ? s.data() : null; onData(); }, dataErr),
+    S.db.collection("beheer/config/events").orderBy("createdAt","desc").limit(60).onSnapshot(q => { S.events = q.docs.map(d => Object.assign({id:d.id}, d.data(), S.pend[d.id] || {})); S.loaded = true; onData(); }, dataErr)
+  ];
+}
+function stopData(){
+  (S.dataSubs || []).forEach(u => { try{ u(); }catch{} }); S.dataSubs = []; S.dataUid = null;
+  for (const k of Object.keys(S.subs)){ S.subs[k].forEach(u => { try{ u(); }catch{} }); delete S.subs[k]; }
+  S.events = []; S.config = null; S.cashiers = {}; S.kd = {}; S.corr = {}; S.recon = {}; S.loaded = false;
+}
+function dataErr(e){
+  err(e);
+  if (e && e.raw === "permission-denied" && !S.isOwner && S.isAnon){
+    LS.set("bep:joined", ""); LS.set("bep:kcode", ""); LS.set("bep:role", "");
+    stopData(); S.mode = "role"; mount();
+    flash("De kassacode werd gewijzigd. Geef de nieuwe code in.");
+  }
+}
+function waitFor(test, ms){ return new Promise(res => { const t0 = Date.now(); const tick = () => { if (test()) return res(true); if (Date.now() - t0 > ms) return res(false); setTimeout(tick, 100); }; tick(); }); }
+
+function mount(){
+  const app = $("#app");
+  app.innerHTML = "";
+  const tpl = $(S.mode === "owner" ? "#tpl-owner" : S.mode === "kassa" ? "#tpl-kassa" : "#tpl-role");
+  app.appendChild(tpl.content.cloneNode(true));
+  if (S.mode === "owner") initOwner(); else if (S.mode === "kassa") initKassa(); else initRole();
+  onData();
+}
+function activeEvent(){ const id = S.config && S.config.active; return S.events.find(e => e.id === id) || null; }
+function eventById(id){ return S.events.find(e => e.id === id) || null; }
+function closeAt(ev){
+  if (!ev || !ev.closeTime || !ev.date) return null;
+  const [y,m,d] = ev.date.split("-").map(Number), [h,mi] = ev.closeTime.split(":").map(Number);
+  const st = (ev.startTime || "18:00").split(":").map(Number);
+  const t = new Date(y, m-1, d, h, mi).getTime();
+  return (h*60+mi) <= (st[0]*60+st[1]) ? t + 86400000 : t;
+}
+function isOpen(ev){ const c = closeAt(ev); return !!ev && ev.status === "open" && (!c || Date.now() < c); }
+setInterval(() => { if (S.mode === "kassa") onData(); }, 30000);
+
+let raf = 0;
+function onData(){ cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (S.mode === "owner") ownerData(); else if (S.mode === "kassa") kassaData(); }); }
+
+/* =========================================================
+   ROLKEUZE
+   ========================================================= */
+function initRole(){
+  $("#r-kassa").onclick = startKassa;
+  $("#r-mgmt").onclick = mgmtLogin;
+}
+async function startKassa(){
+  if (S.isOwner){ pickEvent(); return; }
+  const code = LS.get("bep:kcode", "");
+  if (code){ const ok = await joinWith(code); if (ok) return pickEvent(); }
+  askKassaCode();
+}
+async function joinWith(code){
+  try{
+    let u = BEP.auth.currentUser;
+    if (!u || !u.isAnonymous){ if (u) await BEP.signOut(); u = (await BEP.signInAnon()).user; }
+    await waitFor(() => S.authUid === u.uid, 4000);
+    await S.db.doc("toegang/" + u.uid).set({ code: String(code), at: Date.now() });
+    LS.set("bep:kcode", String(code)); LS.set("bep:joined", u.uid);
+    startData();
+    await waitFor(() => S.loaded, 6000);
+    return true;
+  }catch(e){ err(e); return false; }
+}
+function askKassaCode(){
+  sheet(`<h3>Kassacode</h3>
+    <p class="small muted" style="margin:0">Vraag de code aan de organisatie. Je geeft ze maar één keer in op dit toestel.</p>
+    <div class="pinrow"><input type="password" inputmode="numeric" id="kc-in" maxlength="8" autocomplete="off" aria-label="Kassacode"></div>
+    <p class="small" id="kc-err" style="margin:0;color:var(--bad)" hidden></p>
+    <div class="actions"><button class="btn" id="kc-x">Annuleren</button><button class="btn primary" id="kc-ok">Verder</button></div>`, r => {
+    const fail = m => { const e = $("#kc-err", r); e.textContent = m; e.hidden = false; };
+    const go = async () => {
+      const lock = num(SS.get("bep:lock"));
+      if (lock > Date.now()) return fail(`Te veel foute pogingen. Probeer opnieuw over ${Math.ceil((lock - Date.now())/1000)} seconden.`);
+      const c = $("#kc-in", r).value.trim(); if (!c) return;
+      const ok = $("#kc-ok", r); ok.disabled = true; ok.textContent = "Even geduld…";
+      const good = await joinWith(c);
+      ok.disabled = false; ok.textContent = "Verder";
+      if (!good){
+        const n = num(SS.get("bep:tries")) + 1; SS.set("bep:tries", String(n));
+        if (n >= 5){ SS.set("bep:tries", "0"); SS.set("bep:lock", String(Date.now() + 60000)); return fail("Te veel foute pogingen. Wacht 1 minuut."); }
+        return fail("Deze code klopt niet, of er is geen internet.");
+      }
+      SS.set("bep:tries", "0"); closeSheet(); pickEvent();
+    };
+    $("#kc-x", r).onclick = closeSheet; $("#kc-ok", r).onclick = go;
+    $("#kc-in", r).onkeydown = e => { if (e.key === "Enter") go(); };
+  });
+}
+function mgmtLogin(){
+  if (S.isOwner && !S.isAnon){ return askReauth(); }
+  sheet(`<h3>Management</h3>
+    <label class="f">E-mail<input type="email" id="ml-e" autocomplete="username" value="${esc(LS.get("bep:mail", ""))}"></label>
+    <label class="f">Wachtwoord<input type="password" id="ml-p" autocomplete="current-password"></label>
+    <p class="small" id="ml-err" style="margin:0;color:var(--bad)" hidden></p>
+    <button class="link" id="ml-forgot" style="align-self:flex-start;background:none;border:0;padding:0;color:var(--accent);font-weight:600">Wachtwoord vergeten?</button>
+    <div class="actions"><button class="btn" id="ml-x">Annuleren</button><button class="btn primary" id="ml-ok">Inloggen</button></div>`, r => {
+    const fail = m => { const e = $("#ml-err", r); e.textContent = m; e.hidden = false; };
+    const go = async () => {
+      const e = $("#ml-e", r).value.trim(), p = $("#ml-p", r).value;
+      if (!e || !p) return fail("Vul je e-mail en wachtwoord in.");
+      const ok = $("#ml-ok", r); ok.disabled = true; ok.textContent = "Even geduld…";
+      LS.set("bep:mail", e); LS.set("bep:role", "mgmt");
+      try{
+        const cred = await BEP.signInEmail(e, p);
+        if (cred.user.uid !== BEP.ownerUid){ await BEP.signOut(); LS.set("bep:role", ""); ok.disabled = false; ok.textContent = "Inloggen"; return fail("Dit account heeft geen toegang tot het management."); }
+        closeSheet();
+        if (S.authUid === cred.user.uid){ S.mode = "owner"; mount(); }
+      }catch(x){
+        LS.set("bep:role", ""); ok.disabled = false; ok.textContent = "Inloggen";
+        const c = x && x.code || "";
+        fail(c.includes("too-many") ? "Te veel pogingen. Probeer straks opnieuw." : c.includes("network") ? "Geen internet. Probeer opnieuw." : "E-mail of wachtwoord klopt niet.");
+      }
+    };
+    $("#ml-x", r).onclick = closeSheet; $("#ml-ok", r).onclick = go;
+    r.querySelectorAll("input").forEach(i => i.onkeydown = ev => { if (ev.key === "Enter") go(); });
+    $("#ml-forgot", r).onclick = async () => {
+      const e = $("#ml-e", r).value.trim(); if (!e) return fail("Vul eerst je e-mailadres in.");
+      try{ await BEP.resetPassword(e); fail(""); $("#ml-err", r).hidden = true; flash("Mail verstuurd om je wachtwoord te herstellen"); }catch{ fail("Versturen lukte niet. Controleer je e-mailadres."); }
+    };
+  });
+}
+function askReauth(){
+  sheet(`<h3>Terug naar het management</h3>
+    <p class="small muted" style="margin:0">Geef je wachtwoord opnieuw in, zodat niemand aan de kassa via dit toestel in het management komt.</p>
+    <label class="f">Wachtwoord<input type="password" id="ra-p" autocomplete="current-password"></label>
+    <p class="small" id="ra-err" style="margin:0;color:var(--bad)" hidden></p>
+    <div class="actions"><button class="btn" id="ra-x">Annuleren</button><button class="btn primary" id="ra-ok">Openen</button></div>`, r => {
+    const go = async () => {
+      try{ await BEP.reauth($("#ra-p", r).value); closeSheet(); LS.set("bep:role", "mgmt"); S.mode = "owner"; mount(); }
+      catch{ const e = $("#ra-err", r); e.textContent = "Wachtwoord klopt niet."; e.hidden = false; }
+    };
+    $("#ra-x", r).onclick = closeSheet; $("#ra-ok", r).onclick = go;
+    $("#ra-p", r).onkeydown = e => { if (e.key === "Enter") go(); };
+  });
+}
+async function logoutAll(msg){
+  closeSheet();
+  S.k.name = ""; S.k.station = ""; S.k.ev = null; S.k.evId = ""; S.k.entries = []; S.k.explain = {}; padFor = "";
+  ["bep:name","bep:station","bep:ev","bep:role","bep:joined"].forEach(k => LS.set(k, ""));
+  try{ await BEP.signOut(); }catch{}
+  S.mode = "role"; mount(); if (msg) flash(msg);
+}
+function kassaEvent(){ return eventById(S.k.evId) || null; }
+function pickable(e){ return e.status === "open" || (e.status === "closed" && e.closedAt && Date.now() - e.closedAt < 36*3600000); }
+/* stap 1: event kiezen */
+function pickEvent(){
+  const list = S.events.filter(pickable).sort((a,b) => (a.status === "open" ? 0 : 1) - (b.status === "open" ? 0 : 1));
+  if (!list.length){
+    sheet(`<h3>Er loopt nu geen event</h3><p style="margin:0">Zodra de organisatie een event start, kun je het hier kiezen.</p><div class="actions"><button class="btn primary" id="pe-x">OK</button></div>`, r => { $("#pe-x", r).onclick = closeSheet; });
+    return;
+  }
+  sheet(`<h3>Op welk event sta je?</h3>
+    <div class="roles">${list.map(e => `<button class="role" data-e="${esc(e.id)}"><b>${esc(e.name)}</b><span>${esc([e.location, e.startTime && (e.startTime + "–" + (e.endTime || "")), e.status === "closed" ? "afgesloten · bekijk je rapport" : ""].filter(Boolean).join(" · "))}</span></button>`).join("")}</div>
+    <div class="actions"><button class="btn" id="pe-x">Annuleren</button></div>`, r => {
+    $("#pe-x", r).onclick = closeSheet;
+    r.querySelectorAll("[data-e]").forEach(b => b.onclick = () => { closeSheet(); askName(b.dataset.e); });
+  });
+}
+/* stap 2: naam kiezen */
+function askName(evId){
+  const list = staffList();
+  if (list.length){
+    sheet(`<h3>Wie ben je?</h3>
+      <input type="text" id="nm-q" placeholder="Zoek je naam" autocomplete="off">
+      <div class="roles" id="nm-list"></div>
+      ${S.isOwner ? `<div class="bar"><input type="text" id="nm-new" maxlength="30" placeholder="Nieuwe naam" style="flex:1;min-width:0"><button class="btn green" id="nm-add">Toevoegen en verder</button></div>` : '<p class="small muted" style="margin:0">Staat je naam er niet bij? Vraag het aan de organisatie.</p>'}
+      <div class="actions"><button class="btn" id="nm-x">Annuleren</button></div>`, root => {
+      const add = $("#nm-add", root);
+      if (add) add.onclick = async () => { const v = $("#nm-new", root).value.trim(); if (!v) return; if (!list.some(n => n.toLowerCase() === v.toLowerCase())) await saveStaff(list.concat([v])); confirmName(evId, v); };
+      const paint = () => {
+        const q = $("#nm-q", root).value.trim().toLowerCase();
+        const hits = list.filter(n => n.toLowerCase().includes(q)).sort((a,b) => a.localeCompare(b));
+        $("#nm-list", root).innerHTML = hits.map(n => `<button class="role" data-n="${esc(n)}"><b>${esc(n)}</b></button>`).join("") || '<p class="muted small" style="margin:0">Geen naam gevonden.</p>';
+        root.querySelectorAll("[data-n]").forEach(b => b.onclick = () => confirmName(evId, b.dataset.n));
+      };
+      $("#nm-q", root).oninput = paint; paint();
+      $("#nm-x", root).onclick = closeSheet;
+    });
+    return;
+  }
+  sheet(`<h3>Hoe heet je?</h3>
+    <input type="text" id="nm-in" maxlength="30" autocomplete="given-name" placeholder="Voornaam" value="${esc(S.k.name)}">
+    <div class="actions"><button class="btn" id="nm-x">Annuleren</button><button class="btn primary" id="nm-ok">Verder</button></div>`, root => {
+    const go = () => { const v = $("#nm-in", root).value.trim(); if (!v){ $("#nm-in", root).focus(); return; } confirmName(evId, v); };
+    $("#nm-x", root).onclick = closeSheet; $("#nm-ok", root).onclick = go;
+    $("#nm-in", root).onkeydown = e => { if (e.key === "Enter") go(); };
+  });
+}
+/* stap 3: bevestigen */
+function confirmName(evId, name){
+  const ev = eventById(evId);
+  sheet(`<h3>Bevestig dat jij ${esc(name)} bent</h3>
+    <p style="margin:0">Ik bevestig dat ik <b>${esc(name)}</b> ben en dat ik deze kassa voor <b>${esc(ev ? ev.name : "dit event")}</b> enkel onder mijn eigen naam gebruik.</p>
+    <p class="small muted" style="margin:0">Alles wat onder deze naam geregistreerd wordt, gebeurt onder jouw verantwoordelijkheid en wordt op het einde van de avond gecontroleerd.</p>
+    <div class="actions"><button class="btn" id="cf-x">Terug</button><button class="btn primary" id="cf-ok">Ik bevestig</button></div>`, root => {
+    $("#cf-x", root).onclick = () => askName(evId);
+    $("#cf-ok", root).onclick = () => {
+      S.k.name = name; S.k.evId = evId; S.k.confirmedAt = Date.now();
+      LS.set("bep:name", name); LS.set("bep:ev", evId); LS.set("bep:role", "kassa");
+      S.k.ev = null; S.k.station = ""; LS.set("bep:station", "");
+      closeSheet(); S.mode = "kassa"; mount();
+    };
+  });
+}
+function staffList(){ return (S.config && Array.isArray(S.config.staff)) ? S.config.staff.slice() : []; }
+async function saveStaff(list){
+  const cfg = Object.assign({}, S.config || {}, {staff: list});
+  S.config = cfg; onData();
+  try{ await S.db.doc("beheer/config").set(cfg); }catch{ flash("Opslaan mislukt, probeer opnieuw"); }
+}
+function renderStaffSetup(){
+  const kc = $("#g-kcode"); if (kc) kc.textContent = S.kcode || "nog niet ingesteld";
+  const box = $("#g-staff"); if (!box) return;
+  const list = staffList();
+  const sig = list.join("|"); if (box.dataset.sig === sig) return; box.dataset.sig = sig;
+  box.innerHTML = list.length ? list.map((n, i) => `<span class="chip">${esc(n)}<button class="link" data-rm="${i}" aria-label="${esc(n)} verwijderen" style="background:none;border:0;color:var(--muted);padding:0 0 0 4px;font-size:16px">×</button></span>`).join("")
+    : '<span class="small muted">Nog geen namen. Zolang de lijst leeg is, typen medewerkers zelf hun naam.</span>';
+  box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { const l = staffList(); l.splice(+b.dataset.rm, 1); saveStaff(l); });
+}
+function changeKassaCode(){
+  sheet(`<h3>Kassacode</h3>
+    <p class="small muted" style="margin:0">Je medewerkers geven deze code één keer in op hun gsm. Wijzig je ze, dan moet iedereen de nieuwe code ingeven.</p>
+    <p style="margin:0">Huidige code: <b id="kk-cur">${S.kcode ? esc(S.kcode) : "nog niet ingesteld"}</b></p>
+    <label class="f">Nieuwe code (4 tot 8 cijfers)<input type="text" inputmode="numeric" id="kk-in" maxlength="8" autocomplete="off"></label>
+    <p class="small" id="kk-err" style="margin:0;color:var(--bad)" hidden></p>
+    <div class="actions"><button class="btn" id="kk-x">Annuleren</button><button class="btn primary" id="kk-ok">Opslaan</button></div>`, r => {
+    $("#kk-x", r).onclick = closeSheet;
+    $("#kk-ok", r).onclick = async () => {
+      const c = $("#kk-in", r).value.trim();
+      if (!/^\d{4,8}$/.test(c)){ const e = $("#kk-err", r); e.textContent = "Gebruik 4 tot 8 cijfers."; e.hidden = false; return; }
+      try{ await S.db.doc("geheim/kassa").set({ code: c, at: Date.now() }); closeSheet(); flash("Kassacode opgeslagen"); }
+      catch{ const e = $("#kk-err", r); e.textContent = "Opslaan lukte niet. Probeer opnieuw."; e.hidden = false; }
+    };
+  });
+}
+
+/* =========================================================
+   KASSA
+   ========================================================= */
+let lastTap = {};
+let wl = null;
+async function wake(){ try{ if (S.mode === "kassa" && navigator.wakeLock && !wl){ wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", () => wl = null); } }catch{} }
+function initKassa(){
+  $("#k-switch").onclick = () => sheet(`<h3>Wisselen</h3>
+    <div class="roles">
+      <button class="role" id="w-st"><b>Ander station</b><span>Bijvoorbeeld van de inkom naar de WC.</span></button>
+      <button class="role" id="w-ev"><b>Ander event</b><span>Als er vanavond meerdere events lopen.</span></button>
+      <button class="role" id="w-nm"><b>Andere persoon</b><span>Iemand anders neemt deze kassa over.</span></button>
+      <button class="role" id="w-mg"><b>Management</b><span>Met e-mail en wachtwoord.</span></button>
+    </div>`, r => {
+    $("#w-st", r).onclick = () => { closeSheet(); askStation(false); };
+    $("#w-nm", r).onclick = async () => { await logoutAll(); startKassa(); };
+    $("#w-ev", r).onclick = () => { closeSheet(); S.mode = "role"; LS.set("bep:role",""); mount(); pickEvent(); };
+    $("#w-mg", r).onclick = () => { closeSheet(); mgmtLogin(); };
+  });
+  $("#k-out").onclick = () => sheet(`<h3>Afmelden?</h3><p style="margin:0">Je registraties blijven bewaard. De volgende persoon kiest opnieuw event, naam en station.</p>
+    <div class="actions"><button class="btn" id="ko-x">Annuleren</button><button class="btn danger" id="ko-ok">Afmelden</button></div>`, r => {
+    $("#ko-x", r).onclick = closeSheet;
+    $("#ko-ok", r).onclick = () => logoutAll("Afgemeld");
+  });
+  paintWho();
+  if (!S.uid){ setSync("bad","Niet aangemeld"); return; }
+  wake();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wake(); });
+}
+function paintWho(){ const w = $("#k-who"); if (!w) return; const ev = kassaEvent(); const st = ev && streamsOf(ev).find(s => s.id === S.k.station); w.textContent = S.k.name + (st ? " · " + stationLabel(st) : ""); }
+function stationsFor(ev){ return ev ? streamsOf(ev).filter(isStation) : []; }
+function askStation(auto){
+  const ev = kassaEvent();
+  const list = stationsFor(ev);
+  if (!list.length){ if (!auto) flash("Er zijn nog geen stations voor vanavond"); return; }
+  if (auto && list.length === 1){ setStation(list[0].id); return; }
+  sheet(`<h3>Waar sta je?</h3>
+    <div class="roles">${list.map(s => `<button class="role" data-st="${esc(s.id)}"><b>${esc(stationLabel(s))}</b><span>${s.id === "door" ? "Tickets aan de deur" : s.id === "wc" ? "WC-bezoeken" : s.mode === "price" ? "Vaste prijs per stuk" : "Verkoop met bedrag"}</span></button>`).join("")}</div>`, r => {
+    r.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { setStation(b.dataset.st); closeSheet(); });
+  });
+}
+async function setStation(id){
+  S.k.station = id; LS.set("bep:station", id); paintWho(); renderKassa();
+  if (S.uid){ try{ await writeKassaDoc(); }catch(e){ handleWriteErr(e); } }
+}
+
+async function kassaData(){
+  if (S.mode !== "kassa" || !$("#k-open")) return;
+  const sl = staffList();
+  if (S.events.length && (!kassaEvent() || !pickable(kassaEvent()))){ LS.set("bep:role", ""); S.mode = "role"; mount(); pickEvent(); return; }
+  if (sl.length && !sl.includes(S.k.name)){ S.k.name = ""; LS.set("bep:name", ""); LS.set("bep:role", ""); S.mode = "role"; mount(); askName(S.k.evId); return; }
+  const ev = kassaEvent();
+  const open = isOpen(ev);
+  const cl = $("#k-closed");
+  $("#k-open").hidden = !open; cl.hidden = open;
+  if (!ev || ev.status === "draft"){ $("#k-closed-title").textContent = "De kassa staat dicht"; $("#k-closed-sub").textContent = "Zodra de organisatie de avond start, verschijnen hier de knoppen."; }
+  else if (!open && ev.status === "open"){ $("#k-closed-title").textContent = "De kassa is gesloten"; $("#k-closed-sub").textContent = "De kassa sloot om " + ev.closeTime + ". Vraag de organisatie als ze langer open moet."; }
+  else if (!open){ $("#k-closed-title").textContent = ev.name + " is afgesloten"; $("#k-closed-sub").textContent = "Bekijk hieronder je afsluitrapport en verantwoord eventuele verschillen."; }
+  if (ev) $("#k-ev").textContent = ev.name + (ev.location ? " · " + ev.location : "");
+  if (open){
+    const list = stationsFor(ev);
+    if (!list.some(s => s.id === S.k.station) && list.length && !$("#sheet")) askStation(true);
+  }
+  paintWho();
+  if (ev && S.uid && S.k.ev !== ev.id) await loadKassaEvent(ev.id);
+  if (ev) watchKassaExtras(ev.id);
+  renderKassa();
+}
+
+async function writeKassaDoc(){
+  const evs = LS.get("bep:evs:" + S.uid, []);
+  if (S.k.evId && !evs.includes(S.k.evId)){ evs.push(S.k.evId); LS.set("bep:evs:" + S.uid, evs.slice(-30)); }
+  await S.db.doc("kassa/" + S.uid).set({ name: S.k.name, station: S.k.station || "", since: Date.now(), evs: evs.slice(-30) });
+}
+function kref(evId){ return S.db.doc("kassa/" + S.uid + "/events/" + evId); }
+async function loadKassaEvent(evId){
+  S.k.ev = evId;
+  S.k.confirmed = S.k.confirmedAt ? {name: S.k.name, at: S.k.confirmedAt} : null;
+  const local = LS.get("bep:k:" + evId, {entries:[], explain:{}});
+  S.k.entries = local.entries || []; S.k.explain = local.explain || {};
+  renderKassa();
+  try{
+    const s = await kref(evId).get();
+    const server = s.exists ? s.data() : {entries:[], explain:{}};
+    S.k.entries = mergeEntries(server.entries || [], S.k.entries);
+    if (!S.k.confirmed && server.confirmed) S.k.confirmed = server.confirmed;
+    S.k.explain = Object.assign({}, server.explain || {}, S.k.explain);
+    S.k.synced = JSON.stringify({e:server.entries||[], x:server.explain||{}});
+    persist();
+    if (S.k.synced !== JSON.stringify({e:S.k.entries, x:S.k.explain})) flush(); else setSync("ok","Alles verzonden");
+    await writeKassaDoc();
+  }catch(e){ if (!handleWriteErr(e)){ setSync("pending","Offline, wordt bewaard"); scheduleRetry(); } }
+  renderKassa();
+}
+function mergeEntries(a, b){
+  const m = new Map();
+  for (const e of [...a, ...b]){ const o = m.get(e.id); if (!o || Math.max(e.nt||0, e.xt||0) > Math.max(o.nt||0, o.xt||0)) m.set(e.id, e); }
+  return [...m.values()].sort((x,y) => x.t - y.t);
+}
+function persist(){ if (S.k.ev) LS.set("bep:k:" + S.k.ev, {entries:S.k.entries, explain:S.k.explain}); }
+function setSync(cls, txt){ const p = $("#k-sync"); if (!p) return; p.className = "pill " + cls; p.textContent = txt; }
+function handleWriteErr(e){
+  if (e && e.code === "invalid_argument"){ S.k.denied = true; setSync("bad","Geen toegang"); flash("Geen toegang meer. Meld je af en geef de kassacode opnieuw in."); return true; }
+  if (e && e.code === "quota_exceeded"){ setSync("bad","Opslag vol"); flash("Opslag vol: verwittig de organisatie"); return true; }
+  return false;
+}
+function scheduleRetry(){ if (S.k.retry || S.k.denied) return; S.k.retry = setTimeout(() => { S.k.retry = null; flush(); }, 5000); }
+async function flush(){
+  if (!S.k.ev || !S.uid || S.k.denied) return;
+  if (S.k.writing){ S.k.again = true; return; }
+  S.k.writing = true;
+  const body = { entries: S.k.entries.slice(), explain: Object.assign({}, S.k.explain), name: S.k.name, confirmed: S.k.confirmed || null };
+  const json = JSON.stringify({e:body.entries, x:body.explain});
+  setSync("pending", navigator.onLine === false ? "Offline · wordt bewaard" : "Verzenden");
+  try{ await kref(S.k.ev).set(body); S.k.synced = json; }
+  catch(e){ if (!handleWriteErr(e)){ setSync("pending", "Geen verbinding · wordt bewaard"); scheduleRetry(); } }
+  S.k.writing = false;
+  if (S.k.again){ S.k.again = false; flush(); return; }
+  if (S.k.synced === JSON.stringify({e:S.k.entries, x:S.k.explain})) setSync("ok","Alles verzonden");
+}
+
+function stationPrice(ev, sid){
+  if (sid === "door") return num(ev.prices && ev.prices.cash);
+  const s = streamsOf(ev).find(x => x.id === sid);
+  if (s && s.id === "wc") return num(s.price);
+  if (s && s.custom && s.mode === "price"){ const l = priceList(s.price); return l.length > 1 ? l : (l[0] || 0); }
+  return null; // bedrag ingeven
+}
+function addEntry(k, p, extra){
+  S.k.entries.push(Object.assign({ id: rid(), t: Date.now(), k, p: Math.round(p*100)/100, s: S.k.station || "door" }, extra || {}));
+  persist(); flush(); vibrate(30); renderKassa();
+}
+function tap(k){
+  const ev = kassaEvent();
+  if (!isOpen(ev) || !S.uid || !S.k.station) return;
+  const now = Date.now();
+  if (now - (lastTap[k]||0) < 300) return;
+  lastTap[k] = now;
+  if (k === "tip") return askAmount("Fooi registreren", true, (a, m) => { addEntry("tip", a, {m}); flash(`Fooi ${eur(a)} geregistreerd`); });
+  const price = stationPrice(ev, S.k.station);
+  if (k !== "free" && price === null) return askAmount(`${KIND[k]} · bedrag`, false, a => { addEntry(k, a); flash(`${KIND[k]} ${eur(a)} geregistreerd`); });
+  if (k !== "free" && Array.isArray(price)) return sheet(`<h3>${KIND[k]} · welke prijs?</h3><div class="quick" style="grid-template-columns:repeat(${Math.min(3, price.length)},1fr)">${price.map(p => `<button data-p="${p}" style="padding:22px 0;font-size:20px">${eur(p)}</button>`).join("")}</div><div class="actions"><button class="btn" id="pp-x">Annuleren</button></div>`, r => {
+    $("#pp-x", r).onclick = closeSheet;
+    r.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { closeSheet(); addEntry(k, num(b.dataset.p)); flash(`${KIND[k]} ${eur(num(b.dataset.p))} geregistreerd`); });
+  });
+  addEntry(k, k === "free" ? 0 : price);
+  const n = S.k.entries.filter(e => e.s === S.k.station && e.k !== "tip" && !e.x).length;
+  flash(`${KIND[k]} geregistreerd · #${n}`);
+}
+function askGroup(k){
+  const ev = kassaEvent(); if (!isOpen(ev) || !S.uid || !S.k.station) return;
+  const price = stationPrice(ev, S.k.station);
+  if (k !== "free" && price === null) return tap(k);
+  let n = 0, pr = Array.isArray(price) ? price[0] : price;
+  sheet(`<h3>Groep · ${esc(KIND[k])}</h3>
+    <p class="small muted" style="margin:0">Hoeveel personen tegelijk?</p>
+    <div class="quick">${[2,3,4,5,6,8,10,12].map(q => `<button data-q="${q}">${q}</button>`).join("")}</div>
+    <label class="f">Ander aantal<input type="number" inputmode="numeric" step="1" min="2" max="50" id="gr-in"></label>
+    ${Array.isArray(price) ? `<div class="seg" role="group" aria-label="Prijs">${price.map((p,i) => `<button data-p="${p}"${i ? "" : ' class="on"'}>${eur(p)}</button>`).join("")}</div>` : ""}
+    <div class="actions"><button class="btn" id="gr-x">Annuleren</button><button class="btn primary" id="gr-ok" disabled>Registreren</button></div>`, root => {
+    const ok = $("#gr-ok", root);
+    const sync = () => { ok.disabled = !(n >= 2 && n <= 50); ok.textContent = n >= 2 ? `${n} × ${KIND[k]}${k === "free" ? "" : " · " + eur(n * pr)} registreren` : "Registreren"; };
+    root.querySelectorAll("[data-q]").forEach(b => b.onclick = () => { n = +b.dataset.q; $("#gr-in", root).value = ""; root.querySelectorAll("[data-q]").forEach(x => x.classList.toggle("on", x === b)); sync(); });
+    $("#gr-in", root).oninput = e => { n = Math.round(num(e.target.value)); root.querySelectorAll("[data-q]").forEach(x => x.classList.remove("on")); sync(); };
+    root.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { pr = num(b.dataset.p); root.querySelectorAll("[data-p]").forEach(x => x.classList.toggle("on", x === b)); sync(); });
+    $("#gr-x", root).onclick = closeSheet;
+    ok.onclick = () => {
+      if (!(n >= 2 && n <= 50)) return;
+      const g = rid(), t = Date.now();
+      for (let i = 0; i < n; i++) S.k.entries.push({ id: rid(), t: t + i, k, p: k === "free" ? 0 : Math.round(pr*100)/100, s: S.k.station, g });
+      persist(); flush(); vibrate(60); closeSheet(); renderKassa(); flash(`${n} × ${KIND[k]} geregistreerd`);
+    };
+  });
+}
+function askAmount(title, withMethod, done){
+  let amt = 0, m = "cash";
+  const quick = withMethod ? [1,2,5,10] : [2,3,5,10];
+  sheet(`<h3>${esc(title)}</h3>
+    <div class="quick">${quick.map(q=>`<button data-q="${q}">€${q}</button>`).join("")}</div>
+    <label class="f">Ander bedrag (€)<input type="number" inputmode="decimal" step="0.5" id="am-in" placeholder="0,00"></label>
+    ${withMethod ? '<div class="seg" role="group" aria-label="Hoe ontvangen"><button data-m="cash" class="on">Cash</button><button data-m="card">Bancontact</button></div>' : ""}
+    <div class="actions"><button class="btn" id="am-x">Annuleren</button><button class="btn primary" id="am-ok" disabled>Registreren</button></div>`, root => {
+    const ok = $("#am-ok", root);
+    const sync = () => { ok.disabled = !(amt > 0); ok.textContent = amt > 0 ? `${eur(amt)} registreren` : "Registreren"; };
+    root.querySelectorAll("[data-q]").forEach(b => b.onclick = () => { amt = num(b.dataset.q); $("#am-in",root).value = ""; root.querySelectorAll("[data-q]").forEach(x=>x.classList.toggle("on", x===b)); sync(); });
+    $("#am-in", root).oninput = e => { amt = num(e.target.value); root.querySelectorAll("[data-q]").forEach(x=>x.classList.remove("on")); sync(); };
+    root.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { m = b.dataset.m; root.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on", x===b)); });
+    $("#am-x", root).onclick = closeSheet;
+    ok.onclick = () => { if (!(amt > 0)) return; closeSheet(); done(amt, m); };
+  });
+}
+
+function watchKassaExtras(evId){
+  const key = "kx:" + evId;
+  if (S.subs[key]) return;
+  for (const k of Object.keys(S.subs)) if (k.startsWith("kx:")){ S.subs[k].forEach(u=>u()); delete S.subs[k]; }
+  S.subs[key] = [
+    S.db.doc("beheer/config/corrections/" + evId).onSnapshot(s => { S.corr[evId] = s.exists ? s.data() : {}; renderKassa(); }, err),
+    S.db.doc("beheer/config/recon/" + evId).onSnapshot(s => { S.recon[evId] = s.exists ? s.data() : null; renderKassa(); }, err)
+  ];
+}
+
+let padFor = "";
+function renderKassa(){
+  if (S.mode !== "kassa" || !$("#k-log")) return;
+  const ev = kassaEvent();
+  const open = isOpen(ev);
+  const sid = S.k.station;
+  const price = ev ? stationPrice(ev, sid) : null;
+  const key = sid + "|" + (price === null ? "x" : "p");
+  if (padFor !== key){
+    padFor = key;
+    const btns = price !== null
+      ? [["cash","CASH"],["card","BANCONTACT"],["free","GRATIS"],["tip","FOOI"]]
+      : [["cash","CASH"],["card","BANCONTACT"],["tip","FOOI"]];
+    $("#k-pad").innerHTML = btns.map(([k,l], i) => `<button class="big ${k}${btns.length === 3 && i === 2 ? " wide" : ""}" data-k="${k}">${l}<span id="c-${k}">0</span></button>`).join("");
+    $("#k-pad").querySelectorAll(".big").forEach(b => {
+      let t = null, long = false;
+      const start = () => { long = false; clearTimeout(t); if (b.dataset.k === "tip") return; t = setTimeout(() => { long = true; vibrate(40); askGroup(b.dataset.k); }, 550); };
+      const stop = () => clearTimeout(t);
+      b.addEventListener("pointerdown", start); b.addEventListener("pointerup", stop); b.addEventListener("pointerleave", stop); b.addEventListener("pointercancel", stop);
+      b.addEventListener("contextmenu", e => e.preventDefault());
+      b.addEventListener("click", () => { if (long){ long = false; return; } tap(b.dataset.k); });
+    });
+  }
+  const mine = S.k.entries.filter(e => !e.x && (e.s || "door") === sid);
+  const c = {cash:0, card:0, free:0, tip:0};
+  mine.forEach(e => c[e.k] = (c[e.k]||0) + 1);
+  for (const k in c){ const el = $("#c-"+k); if (el) el.textContent = k === "tip" ? `${c[k]} × · ${eur(mine.filter(e=>e.k==="tip").reduce((a,e)=>a+e.p,0))}` : `${c[k]} vanavond`; }
+  $("#k-pad").querySelectorAll(".big").forEach(b => b.disabled = !open || S.k.denied || !sid);
+  $("#k-mytotal").textContent = `${S.k.entries.filter(e => e.k !== "tip" && !e.x).length} registraties`;
+  const corr = (ev && S.corr[ev.id] && S.corr[ev.id].items) || {};
+  const sts = ev ? streamsOf(ev) : [];
+  const stName = id => { const s = sts.find(x => x.id === (id || "door")); return s ? stationLabel(s) : ""; };
+  const rows = S.k.entries.slice().reverse().slice(0, 200).map(e => {
+    const co = corr[S.uid + ":" + e.id];
+    const tag = e.x ? '<span class="tag bad">Geannuleerd</span>' : co ? `<span class="tag warn">${co.action === "void" ? "Geannuleerd door organisatie" : "Aangepast naar " + KIND[co.action]}</span>` : "";
+    const label = e.k === "tip" ? `Fooi (${e.m === "card" ? "Bancontact" : "cash"})` : KIND[e.k];
+    return `<div class="row${e.x || (co && co.action==="void") ? " void" : ""}">
+      <span class="t">${hm(e.t)}</span><i class="dot ${e.k}"></i>
+      <span class="who">${esc(label)} <span class="muted">${e.k === "free" ? "" : eur(e.p)} · ${esc(stName(e.s))}</span> ${tag}</span>
+      <span class="bar" style="gap:12px;flex-wrap:nowrap"><button class="link" data-note="${e.id}">${e.n ? "Notitie ✎" : "Notitie"}</button>${e.x ? "" : `<button class="link" data-x="${e.id}" style="color:var(--bad)">Annuleren</button>`}</span>
+      ${e.x ? `<div class="note own">Reden annulatie: ${esc(e.xr)}</div>` : ""}
+      ${e.n ? `<div class="note own">${esc(e.n)}</div>` : ""}
+      ${co && co.reason ? `<div class="note">Organisatie: ${esc(co.reason)}</div>` : ""}
+    </div>`;
+  }).join("");
+  $("#k-log").innerHTML = rows || '<p class="muted small" style="margin:0">Nog niets geregistreerd. Elke tik verschijnt hier met het tijdstip.</p>';
+  $("#k-log").querySelectorAll("[data-note]").forEach(b => b.onclick = () => askNote(b.dataset.note));
+  $("#k-log").querySelectorAll("[data-x]").forEach(b => b.onclick = () => askCancel(b.dataset.x));
+  renderKassaReport(ev, corr);
+}
+function askNote(id){
+  const e = S.k.entries.find(x => x.id === id); if (!e) return;
+  sheet(`<h3>Notitie bij ${hm(e.t)} · ${esc(KIND[e.k])}</h3>
+    <p class="small muted" style="margin:0">Bijvoorbeeld: “afgesproken prijs met de organisatie” of “gast betaalde met twee kaarten”.</p>
+    <textarea id="n-in" maxlength="300">${esc(e.n || "")}</textarea>
+    <div class="actions"><button class="btn" id="n-x">Annuleren</button><button class="btn primary" id="n-ok">Opslaan</button></div>`, root => {
+    $("#n-x", root).onclick = closeSheet;
+    $("#n-ok", root).onclick = () => { e.n = $("#n-in", root).value.trim(); e.nt = Date.now(); persist(); flush(); closeSheet(); renderKassa(); flash("Notitie opgeslagen"); };
+  });
+}
+function askCancel(id){
+  const e = S.k.entries.find(x => x.id === id); if (!e || e.x) return;
+  sheet(`<h3>${hm(e.t)} · ${esc(KIND[e.k])} annuleren</h3>
+    <p class="small muted" style="margin:0">Waarom annuleer je deze registratie? Dit is verplicht en de organisatie ziet het.</p>
+    <textarea id="x-in" maxlength="300" placeholder="Bijvoorbeeld: twee keer getikt"></textarea>
+    <div class="actions"><button class="btn" id="x-x">Terug</button><button class="btn danger" id="x-ok" disabled>Annuleren met deze reden</button></div>`, root => {
+    const inp = $("#x-in", root), ok = $("#x-ok", root);
+    inp.oninput = () => ok.disabled = inp.value.trim().length < 3;
+    $("#x-x", root).onclick = closeSheet;
+    ok.onclick = () => { const r = inp.value.trim(); if (r.length < 3) return; e.x = true; e.xr = r; e.xt = Date.now(); persist(); flush(); closeSheet(); renderKassa(); flash("Registratie geannuleerd"); };
+  });
+}
+function renderKassaReport(ev, corr){
+  const box = $("#k-report");
+  if (!ev || ev.status !== "closed"){ box.hidden = true; return; }
+  box.hidden = false;
+  const myCorr = Object.entries(corr).filter(([k]) => k.startsWith(S.uid + ":"));
+  const rc = S.recon[ev.id];
+  const mine = rc && rc.result && rc.result.byUid && rc.result.byUid[S.uid] || {taps:[], tx:[]};
+  const byId = new Map(S.k.entries.map(e => [e.id, e]));
+  const items = [];
+  myCorr.forEach(([k, c]) => { const e = byId.get(k.split(":")[1]); if (e) items.push({key:"c:"+e.id, t:e.t, txt:`${hm(e.t)} · ${KIND[e.k]} ${c.action === "void" ? "geannuleerd" : "aangepast naar " + KIND[c.action]} door de organisatie${c.reason ? " (" + c.reason + ")" : ""}`}); });
+  (mine.taps||[]).forEach(id => { const e = byId.get(id); if (e) items.push({key:"t:"+id, t:e.t, txt:`${hm(e.t)} · Bancontact ${eur(e.p)} getikt, maar geen betaling in SumUp`}); });
+  (mine.tx||[]).forEach(x => items.push({key:"x:"+x.r, t:x.t, txt:`${hm(x.t)} · ${eur(x.a)} binnengekomen op SumUp, maar niet getikt`}));
+  items.sort((a,b) => a.t - b.t);
+  const n = S.k.entries.filter(e => e.k !== "tip" && !e.x).length, xs = S.k.entries.filter(e => e.x).length;
+  box.innerHTML = `<h2>Jouw afsluitrapport</h2>
+    <p style="margin:0">Je deed <b>${n}</b> registraties${xs ? ` en annuleerde er ${xs}` : ""}. ${items.length ? `Er ${items.length===1?"is":"zijn"} <b class="hl">${items.length} ${items.length===1?"punt":"punten"}</b> die je moet verantwoorden.` : "Er zijn geen fouten of verschillen gevonden. Netjes gewerkt."}</p>
+    ${rc ? "" : '<p class="small muted" style="margin:0">De SumUp-vergelijking is nog niet gebeurd. Kom straks nog eens kijken.</p>'}
+    <div class="list">${items.map(it => `<div class="row" style="grid-template-columns:1fr"><span>${esc(it.txt)}</span>
+      <textarea data-ex="${esc(it.key)}" placeholder="Jouw uitleg" maxlength="300">${esc(S.k.explain[it.key] || "")}</textarea></div>`).join("")}</div>
+    ${items.length ? '<div class="actions"><button class="btn primary" id="ex-ok">Uitleg versturen</button></div>' : ""}`;
+  const okb = $("#ex-ok", box);
+  if (okb) okb.onclick = () => { box.querySelectorAll("[data-ex]").forEach(t => { const v = t.value.trim(); if (v) S.k.explain[t.dataset.ex] = v; else delete S.k.explain[t.dataset.ex]; }); persist(); flush(); flash("Uitleg verstuurd"); };
+}
+
+/* =========================================================
+   MANAGEMENT
+   ========================================================= */
+function initOwner(){
+  if (!S.isOwner){ S.mode = "role"; mount(); return; }
+  $("#o-tokassa").onclick = () => logoutAll("Uitgelogd");
+  S.subs.kcode = S.subs.kcode || [S.db.doc("geheim/kassa").onSnapshot(s => { S.kcode = s.exists ? s.data().code : ""; onData(); }, err)];
+  $("#o-new").onclick = $("#o-new2").onclick = newEvent;
+  $("#o-evsel").onchange = e => selectEvent(e.target.value);
+  $("#o-more").onclick = () => { S.feedLimit += 60; renderOwner(); };
+  $("#o-sound").onclick = () => { S.sound = !S.sound; unlockAudio(); if (S.sound) chime(true); paintSound(); };
+  $("#o-addstream").onclick = addStream;
+  $("#g-help").onclick = () => pickEvent();
+  $("#g-code").onclick = changeKassaCode;
+  const addStaff = async () => {
+    const inp = $("#g-staff-in"); const v = inp.value.trim(); if (!v) return;
+    const list = staffList(); if (list.some(n => n.toLowerCase() === v.toLowerCase())){ inp.value = ""; return; }
+    inp.value = ""; await saveStaff(list.concat([v]));
+  };
+  $("#g-staff-add").onclick = addStaff;
+  $("#g-kcode-btn").onclick = changeKassaCode;
+  $("#g-staff-in").onkeydown = e => { if (e.key === "Enter") addStaff(); };
+  $("#o-close").onclick = closeEventFlow;
+  $("#o-csvout").onclick = exportCsv;
+  $("#o-del").onclick = () => askDelete(S.sel);
+  $("#o-csv").onchange = onCsv;
+  $("#p-down").onclick = () => stagePrice(num($("#p-val").value) - 1);
+  $("#p-up").onclick = () => stagePrice(num($("#p-val").value) + 1);
+  $("#p-val").addEventListener("input", e => stagePrice(num(e.target.value), true));
+  $("#p-val").addEventListener("keydown", e => { if (e.key === "Enter") e.target.blur(); });
+  $("#p-val").addEventListener("change", e => e.target.blur());
+  $("#p-cancel").onclick = () => { S.pending = null; onData(); };
+  $("#p-send").onclick = () => { if (S.pending === null || S.pending === undefined) return; const v = S.pending; S.pending = null; setPrice(v); flash(`Deurprijs ${eur(v)} doorgestuurd naar de kassa`); };
+  const paintVat = () => document.querySelectorAll("#vat-seg [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === LS.get("bep:vat","ex")));
+  document.querySelectorAll("#vat-seg [data-v]").forEach(b => b.onclick = () => { LS.set("bep:vat", b.dataset.v); paintVat(); onData(); });
+  S.paintVat = paintVat;
+  paintVat();
+  document.querySelectorAll("#g-basis [data-f], #g-cost [data-f], #s-counted").forEach(inp => inp.addEventListener("input", onSettingInput));
+  document.querySelectorAll("#o-tabs [data-t]").forEach(b => b.onclick = () => setTab(b.dataset.t));
+  setTab(LS.get("bep:tab", "gegevens"));
+  S.subs.cashiers = S.subs.cashiers || [S.db.collection("kassa").onSnapshot(q => {
+    S.cashiers = {}; q.docs.forEach(d => S.cashiers[d.id] = d.data()); syncSubs(); onData();
+  }, err)];
+  paintedFor = null; boxesFor = "";
+  paintSound();
+}
+function paintSound(){ const b = $("#o-sound"); if (!b) return; b.textContent = S.sound ? "Geluid aan" : "Geluid uit"; b.setAttribute("aria-pressed", String(S.sound)); }
+function setTab(t){
+  if (!["gegevens","overzicht","live","opvallend","stats"].includes(t)) t = "gegevens";
+  LS.set("bep:tab", t);
+  const nb = $("#o-new"); if (nb) nb.hidden = t !== "gegevens";
+  document.querySelectorAll("#o-main .panel").forEach(p => p.hidden = p.dataset.tab !== t);
+  document.querySelectorAll("#o-tabs [data-t]").forEach(b => { b.classList.toggle("on", b.dataset.t === t); b.setAttribute("aria-current", b.dataset.t === t ? "page" : "false"); });
+  window.scrollTo(0, 0);
+}
+function selectEvent(id){ S.pending = null; S.sel = id; S.feedLimit = 40; syncSubs(); paintedFor = null; boxesFor = ""; onData(); }
+function syncSubs(){
+  if (S.mode !== "owner" || !S.sel) return;
+  const ev = S.sel;
+  const mine = Object.keys(S.cashiers).filter(u => !Array.isArray(S.cashiers[u].evs) || S.cashiers[u].evs.includes(ev));
+  const want = new Set(["c:"+ev, "r:"+ev, ...mine.map(u => "k:"+u+":"+ev)]);
+  for (const k of Object.keys(S.subs)){ if (k === "cashiers" || k === "kcode" || k.startsWith("kx:")) continue; if (!want.has(k)){ S.subs[k].forEach(u=>u()); delete S.subs[k]; } }
+  if (!S.subs["c:"+ev]) S.subs["c:"+ev] = [S.db.doc("beheer/config/corrections/"+ev).onSnapshot(s => { S.corr[ev] = s.exists ? s.data() : {}; onData(); }, err)];
+  if (!S.subs["r:"+ev]) S.subs["r:"+ev] = [S.db.doc("beheer/config/recon/"+ev).onSnapshot(s => { S.recon[ev] = s.exists ? s.data() : null; onData(); }, err)];
+  for (const u of mine){
+    const key = "k:"+u+":"+ev;
+    if (!S.subs[key]) S.subs[key] = [S.db.doc("kassa/"+u+"/events/"+ev).onSnapshot(s => {
+      (S.kd[ev] = S.kd[ev] || {})[u] = s.exists ? s.data() : {entries:[]}; onData();
+    }, err)];
+  }
+}
+const STATUS = {draft:"Voorbereiding", open:"Loopt", closed:"Afgesloten"};
+function ownerData(){
+  if (S.mode !== "owner" || !$("#o-evsel")) return;
+  const sel = $("#o-evsel");
+  const act = S.config && S.config.active;
+  if (!S.sel || !eventById(S.sel)){ const first = act && eventById(act) ? act : (S.events[0] && S.events[0].id); if (first && first !== S.sel){ S.sel = first; syncSubs(); paintedFor = null; boxesFor = ""; } }
+  sel.innerHTML = S.events.map(e => `<option value="${esc(e.id)}"${e.id===S.sel?" selected":""}>${esc(e.name)} · ${esc(e.date||"")} · ${STATUS[e.status] || ""}</option>`).join("");
+  const has = !!S.sel && !!eventById(S.sel);
+  $("#o-empty").hidden = has;
+  $("#o-main").hidden = !has;
+  $("#o-tabs").hidden = !has;
+  sel.hidden = !S.events.length;
+  if (has){ paintSetup(); renderOwner(); }
+  else { $("#o-status").className = "pill idle"; $("#o-status").textContent = "Geen avond"; }
+}
+
+/* ----- compute ----- */
+function priceAt(ev, t){
+  const log = (ev.priceLog || []).slice().sort((a,b) => a.at - b.at);
+  let p = num(ev.prices && ev.prices.cash);
+  for (const l of log){ if (l.at <= t) p = num(l.cash); else break; }
+  return p;
+}
+function compute(evId){
+  const ev = eventById(evId); if (!ev) return null;
+  const corr = (S.corr[evId] && S.corr[evId].items) || {};
+  const streams = streamsOf(ev);
+  const rows = [];
+  for (const [uid, doc] of Object.entries(S.kd[evId] || {})){
+    for (const e of (doc.entries || [])){
+      const key = uid + ":" + e.id, c = corr[key], s = e.s || "door";
+      let k = e.k, p = e.p, isVoid = !!e.x;
+      if (c && !e.x){
+        if (c.action === "void") isVoid = true;
+        else if (e.k !== "tip"){ k = c.action; p = k === "free" ? 0 : (e.k === "free" ? (s === "door" ? priceAt(ev, e.t) : num((streams.find(x => x.id === s) || {}).price)) : e.p); }
+      }
+      rows.push({uid, e, key, c, k, p, s, void:isVoid, self:!!e.x, explain:(doc.explain||{}), name:doc.name});
+    }
+  }
+  rows.sort((a,b) => b.e.t - a.e.t);
+  const live = rows.filter(r => !r.void);
+  const T = {cashN:0,cashS:0,cardN:0,cardS:0,freeN:0,tipCash:0,tipCard:0,tipN:0,voidN:rows.length-live.length, allCash:0, allCard:0};
+  const tapped = {};
+  live.forEach(r => {
+    if (r.k === "tip"){ T.tipN++; if (r.e.m === "card") T.tipCard += r.p; else T.tipCash += r.p; return; }
+    if (r.k === "cash") T.allCash += r.p; if (r.k === "card") T.allCard += r.p;
+    const t = tapped[r.s] = tapped[r.s] || {n:0, sum:0, cash:0, card:0, free:0};
+    t.n++; t.sum += r.p; t[r.k] += r.k === "free" ? 1 : r.p;
+    if (r.s === "door"){
+      if (r.k === "cash"){ T.cashN++; T.cashS += r.p; }
+      else if (r.k === "card"){ T.cardN++; T.cardS += r.p; }
+      else if (r.k === "free") T.freeN++;
+    }
+  });
+  T.door = T.cashS + T.cardS; T.inN = T.cashN + T.cardN + T.freeN;
+  let gross = 0, net = 0, exTotal = 0; const per = [];
+  streams.forEach(s => {
+    const tp = tapped[s.id] || {n:0, sum:0};
+    let amount, manual = 0;
+    if (s.id === "door") amount = T.door;
+    else if (s.id === "wc"){ manual = num(s.price) * num(s.count); amount = tp.sum + manual; }
+    else { manual = num(s.amount); amount = tp.sum + manual; }
+    const vat = num(s.vat), margin = sMargin(s);
+    const exVat = amount / (1 + vat/100);
+    const contrib = margin === null ? 0 : exVat * margin / 100;
+    per.push({s, amount, manual, tapped:tp, exVat, contrib, margin, unit: margin === null ? 0 : 1/(1+vat/100)*margin/100, missing: s.on && margin === null});
+    if (s.on){ gross += amount; net += contrib; exTotal += exVat; }
+  });
+  const cost = num(ev.cost);
+  const online = streams.find(s => s.id === "online");
+  T.onlineN = online && online.on ? Math.round(num(online.count)) : 0;
+  return {ev, streams, rows, live, T, per, gross, net, exTotal, cost, result: net - cost, pct: cost ? Math.min(100, net/cost*100) : 0};
+}
+
+/* ----- owner render ----- */
+function renderOwner(){
+  const C = compute(S.sel); if (!C) return;
+  const {ev, T} = C;
+  const st = $("#o-status");
+  if (ev.status === "open"){ st.className = isOpen(ev) ? "pill ok" : "pill pending"; st.textContent = isOpen(ev) ? "Live" : "Kassa gesloten"; }
+  else if (ev.status === "draft"){ st.className = "pill pending"; st.textContent = "Voorbereiding"; }
+  else { st.className = "pill idle"; st.textContent = "Afgesloten"; }
+  $("#o-close").textContent = ev.status === "open" ? "Avond afsluiten" : ev.status === "draft" ? "Avond starten" : "Avond heropenen";
+
+  if (C.cost > 0 && C.net >= C.cost && !ev.breakEvenAt && !S.beWritten[ev.id] && ev.status === "open"){
+    S.beWritten[ev.id] = true; saveEvent(ev.id, {breakEvenAt: Date.now()}); celebrate(C);
+  } else if (ev.breakEvenAt && C.net < C.cost && ev.status !== "closed" && S.beWritten[ev.id] !== "cleared"){
+    // cijfers werden naar beneden bijgesteld: break-even geldt niet meer
+    S.beWritten[ev.id] = "cleared"; localPatch(ev.id, {breakEvenAt: null}); saveEvent(ev.id, {breakEvenAt: null}).then(() => { S.beWritten[ev.id] = false; });
+  }
+  renderStart(C);
+  renderStaffSetup();
+  renderPriceCard(ev);
+  renderSummary(C);
+  renderScenarios(C);
+  renderOmzet(C);
+
+  $("#o-tiles").innerHTML = [
+    ["Binnen aan de deur", T.inN, T.onlineN ? `+ ${T.onlineN} online` : "", ""],
+    ["Cash", T.cashN, eur(T.cashS), "cash"],
+    ["Bancontact", T.cardN, eur(T.cardS), "card"],
+    ["Gratis", T.freeN, T.tipN ? `Fooien ${eur(T.tipCash + T.tipCard)}` : "", "free"]
+  ].map(([l,n,s,d]) => `<div class="tile"><span class="lab">${d?`<i class="dot ${d}"></i>`:""}${l}</span><b>${n}</b><span class="small muted num">${s}</span></div>`).join("");
+  renderLanes(C);
+  renderFeed(C);
+
+  const float = num(ev.float), expect = float + T.allCash + T.tipCash;
+  $("#o-drawer").innerHTML = `<span>Wisselgeld bij start</span><span>${eur(float)}</span>
+    <span>Cash verkoop (alle stations)</span><span>${eur(T.allCash)}</span>
+    <span>Cash fooien</span><span>${eur(T.tipCash)}</span>
+    <span class="tot">Verwacht in de kassa</span><span class="tot">${eur(expect)}</span>`;
+  const hasCount = !blank(ev.counted);
+  const d = num(ev.counted) - expect;
+  $("#o-diff").innerHTML = hasCount ? `<span class="tag ${Math.abs(d) < 0.01 ? "good" : "bad"}">${Math.abs(d) < 0.01 ? "Kassa klopt" : (d < 0 ? "Tekort " : "Teveel ") + eur(Math.abs(d))}</span>` : "";
+  const nIssues = renderIssues(C) + (hasCount && Math.abs(d) >= 0.01 ? 1 : 0);
+  const bd = $("#o-badge"); bd.hidden = !nIssues; bd.textContent = nIssues;
+  renderRecon(C);
+
+  renderReport(C);
+  renderStaff(C);
+  renderChart(C);
+  renderLevels(C);
+  refreshNames(Object.keys(S.kd[ev.id] || {}));
+}
+
+function who(uid){ const c = S.cashiers[uid] || {}; const doc = S.sel && S.kd[S.sel] && S.kd[S.sel][uid]; return (doc && doc.name) || c.name || S.names[uid] || "Medewerker"; }
+let nameBusy = false;
+function refreshNames(){}
+
+
+/* ----- tab 1: gegevens ----- */
+let paintedFor = null;
+function paintSetup(){
+  const ev = eventById(S.sel); if (!ev || !$("#s-name")) return;
+  if (paintedFor === ev.id) return;
+  paintedFor = ev.id;
+  const set = (id, v) => { const el = $(id); if (el && document.activeElement !== el) el.value = v ?? ""; };
+  set("#s-name", ev.name); set("#s-date", ev.date); set("#s-loc", ev.location); set("#s-start", ev.startTime); set("#s-end", ev.endTime); set("#s-close", ev.closeTime);
+  set("#s-cost", ev.cost); set("#s-float", ev.float); set("#s-counted", ev.counted);
+  renderSources(ev);
+}
+function renderSources(ev){
+  const st = streamsOf(ev); const box = $("#g-sources");
+  const vatSel = (i, v) => `<label class="f">Btw<select data-sf="vat" data-i="${i}">${VATS.map(x => `<option value="${x}"${num(v)===x?" selected":""}>${x}%</option>`).join("")}</select></label>`;
+  const marg = (i, s) => `<label class="f">Winstmarge (%)<input type="number" inputmode="decimal" min="0" max="100" step="1" data-sf="margin" data-i="${i}" value="${blank(s.margin) ? "" : s.margin}" placeholder="vul in"></label>`;
+  box.innerHTML = st.map((s, i) => {
+    let f = "";
+    if (s.id === "door") f = `<label class="f">Deurprijs (€)<input type="number" inputmode="decimal" step="0.5" id="g-price" value="${ev.prices && !blank(ev.prices.cash) ? ev.prices.cash : ""}"></label>${vatSel(i, s.vat)}
+      <p class="note-s">Eén prijs voor cash en Bancontact. Tijdens de avond zet je hem hoger of lager bij Overzicht. SumUp-API: volgt, tot dan vergelijk je met de SumUp-CSV bij Opvallend.</p>`;
+    else if (s.id === "online") f = `<label class="f">Platform<select data-sf="platform" data-i="${i}">${["","Weeztix","Stager","Eventbrite","Andere"].map(p => `<option value="${p}"${(s.platform||"")===p?" selected":""}>${p || "Kies"}</option>`).join("")}</select></label>
+      <label class="f">Link naar ticketdashboard<input type="text" inputmode="url" data-sf="link" data-i="${i}" value="${esc(s.link||"")}" placeholder="https://"></label>${vatSel(i, s.vat)}
+      <p class="note-s">De API-koppeling met het ticketplatform volgt. Tot dan vul je het aantal tickets en het bedrag in bij Overzicht.</p>`;
+    else if (s.id === "wc") f = `<label class="f">Prijs per bezoek (€)<input type="number" inputmode="decimal" step="0.1" data-sf="price" data-i="${i}" value="${blank(s.price) ? "" : s.price}"></label>${vatSel(i, s.vat)}`;
+    else if (s.custom) f = `<label class="f">Naam<input type="text" data-sf="name" data-i="${i}" value="${esc(s.name||"")}" maxlength="30"></label>
+      <label class="f">Soort<select data-sf="mode" data-i="${i}"><option value="price"${s.mode === "price" ? " selected" : ""}>Vaste prijs per stuk</option><option value="margin"${s.mode !== "price" ? " selected" : ""}>Verkoop met winstmarge</option></select></label>
+      ${s.mode === "price" ? `<label class="f">Prijs per stuk (€)<input type="text" inputmode="decimal" data-sf="price" data-i="${i}" value="${esc(blank(s.price) ? "" : s.price)}" placeholder="2 of 2; 3"></label>` : marg(i, s)}${vatSel(i, s.vat)}
+      ${s.mode === "price" ? '<p class="note-s">Meerdere prijzen? Scheid ze met een puntkomma, bijvoorbeeld 2; 3. De kassa vraagt dan welke.</p>' : ""}`;
+    else f = `${vatSel(i, s.vat)}${marg(i, s)}
+      ${s.custom ? `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-sf="kassa" data-i="${i}"${s.kassa ? " checked" : ""}> Er staat een kassa</label><button class="btn danger" data-rm="${i}" style="align-self:end">Verwijderen</button>` : ""}`;
+    const hint = s.custom ? "Omzet vul je zelf in, of laat een kassa tikken" : SRC[s.id].hint;
+    return `<div class="src${s.on ? " on" : ""}">
+      <label class="srchead"><span class="switch"><input type="checkbox" data-sf="on" data-i="${i}"${s.on ? " checked" : ""} aria-label="${esc(sName(s))}"><span></span></span>
+        <span style="min-width:0"><b>${esc(sName(s))}</b><span class="small muted" style="display:block">${esc(hint)}</span></span></label>
+      <div class="fields">${f}</div></div>`;
+  }).join("");
+  box.querySelectorAll("[data-sf]").forEach(inp => inp.addEventListener(inp.type === "checkbox" || inp.tagName === "SELECT" ? "change" : "input", onSrcInput));
+  box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { const cur = eventById(S.sel); const arr = streamsOf(cur); arr.splice(+b.dataset.rm, 1); saveStreams(cur.id, arr, true); });
+  const gp = $("#g-price"); if (gp) gp.addEventListener("input", e => setPrice(num(e.target.value), true));
+}
+function onSrcInput(e){
+  const ev = eventById(S.sel); if (!ev) return;
+  const i = +e.target.dataset.i, f = e.target.dataset.sf;
+  const arr = streamsOf(ev);
+  const s = arr[i]; if (!s) return;
+  if (f === "on" || f === "kassa"){ s[f] = e.target.checked; return saveStreams(ev.id, arr, true); }
+  if (f === "mode"){ s.mode = e.target.value; return saveStreams(ev.id, arr, true); }
+  if (f === "price" && s.custom){ s.price = e.target.value; return saveStreams(ev.id, arr, false); }
+  if (f === "vat") s.vat = num(e.target.value);
+  else if (f === "margin") s.margin = e.target.value === "" ? null : Math.max(0, Math.min(100, num(e.target.value)));
+  else if (f === "price") s.price = e.target.value === "" ? null : num(e.target.value);
+  else s[f] = e.target.value;
+  saveStreams(ev.id, arr, false);
+}
+function saveStreams(id, arr, structural){
+  const data = arr.map(s => clean({...s}));
+  localPatch(id, {streams: data});
+  if (structural){ saveEvent(id, {streams: data}); paintedFor = null; boxesFor = ""; paintSetup(); }
+  else debounceSave(id, "streams", () => ({streams: (eventById(id) || {}).streams}));
+}
+function addStream(){
+  const ev = eventById(S.sel); if (!ev) return;
+  sheet(`<h3>Andere inkomstenbron</h3>
+    <div class="quick" style="grid-template-columns:repeat(2,1fr)">${["Vestiaire","Merch","Sponsoring","Lockers"].map(n=>`<button data-n="${n}">${n}</button>`).join("")}</div>
+    <label class="f">Of een eigen naam<input type="text" id="as-in" maxlength="30" placeholder="Extra"></label>
+    <div class="actions"><button class="btn" id="as-x">Annuleren</button><button class="btn primary" id="as-ok">Toevoegen</button></div>`, root => {
+    root.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { $("#as-in",root).value = b.dataset.n; });
+    $("#as-x", root).onclick = closeSheet;
+    $("#as-ok", root).onclick = () => {
+      const name = $("#as-in", root).value.trim() || "Extra";
+      const fixedP = ["Vestiaire","Lockers"].includes(name);
+      const arr = streamsOf(ev).concat([{id:"x"+rid(), name, custom:true, on:true, amount:0, vat:21, mode: fixedP ? "price" : "margin", price: fixedP ? "" : null, margin: name === "Sponsoring" ? 100 : null, kassa:["Vestiaire","Merch","Lockers"].includes(name)}]);
+      saveStreams(ev.id, arr, true); closeSheet();
+    };
+  });
+}
+function onSettingInput(e){
+  const ev = eventById(S.sel); if (!ev) return;
+  const f = e.target.dataset.f; const v = e.target.value;
+  if (["name","date","location","startTime","endTime","closeTime"].includes(f)){
+    localPatch(ev.id, {[f]: v});
+    debounceSave(ev.id, f, () => ({[f]: (eventById(ev.id)||{})[f] || ""}));
+  } else {
+    const val = v === "" ? null : num(v);
+    localPatch(ev.id, {[f]: val});
+    debounceSave(ev.id, f, () => ({[f]: (eventById(ev.id)||{})[f] ?? null}));
+  }
+}
+function setPrice(v, typed){
+  const ev = eventById(S.sel); if (!ev) return;
+  v = Math.max(0, Math.round(v*100)/100);
+  const prices = {cash: v, card: v};
+  localPatch(ev.id, {prices});
+  if (!typed){ const pv = $("#p-val"); if (pv) pv.value = v; }
+  const gp = $("#g-price"); if (gp && document.activeElement !== gp) gp.value = v;
+  debounceSave(ev.id, "prices", () => { const cur = eventById(ev.id); const last = (cur.priceLog || []).slice(-1)[0];
+    const log = (cur.priceLog || []).concat(last && num(last.cash) === num(cur.prices.cash) ? [] : [{at: Date.now(), cash: num(cur.prices.cash), card: num(cur.prices.cash)}]).slice(-60);
+    return {prices: cur.prices, priceLog: log}; }, 1200);
+}
+function localPatch(id, patch){
+  S.pend[id] = Object.assign({}, S.pend[id] || {}, patch);
+  const i = S.events.findIndex(e => e.id === id); if (i >= 0){ S.events[i] = Object.assign({}, S.events[i], patch); onData(); }
+}
+const timers = {};
+function debounceSave(id, key, build, ms = 600){ clearTimeout(timers[id+key]); timers[id+key] = setTimeout(() => saveEvent(id, build()), ms); }
+const evQueue = {};
+function saveEvent(id, patch){
+  evQueue[id] = (evQueue[id] || Promise.resolve()).then(async () => {
+    try{
+      await S.db.doc("beheer/config/events/" + id).update(patch);
+      const p = S.pend[id];
+      if (p) for (const k of Object.keys(patch)) if (JSON.stringify(p[k]) === JSON.stringify(patch[k])) delete p[k];
+      const s = $("#s-saved"); if (s) s.textContent = "Opgeslagen om " + hm(Date.now()) + ".";
+    }
+    catch(e){ flash("Opslaan mislukt, controleer je verbinding"); }
+  });
+  return evQueue[id];
+}
+function renderStart(C){
+  const {ev} = C; const box = $("#g-start"); if (!box) return;
+  const st = C.streams;
+  const checks = [[!!ev.name && !!ev.date, "Naam en datum"], [!!ev.startTime && !!ev.closeTime, "Beginuur en sluituur van de kassa"]];
+  const door = st.find(s => s.id === "door");
+  if (door.on) checks.push([num(ev.prices && ev.prices.cash) > 0, "Deurprijs"]);
+  const wc = st.find(s => s.id === "wc"); if (wc.on) checks.push([num(wc.price) > 0, "Prijs per WC-bezoek"]);
+  st.filter(s => s.on && !sFixed(s)).forEach(s => checks.push([sMargin(s) !== null, "Winstmarge " + sName(s).toLowerCase()]));
+  st.filter(s => s.on && s.custom && s.mode === "price").forEach(s => checks.push([priceList(s.price).length > 0, "Prijs " + sName(s).toLowerCase()]));
+  checks.push([C.cost > 0, "Kosten van de avond"]);
+  checks.push([!!S.kcode, "Kassacode voor je medewerkers (rode knop bovenaan)"]);
+  checks.push([st.some(s => s.on), "Minstens één inkomstenbron"]);
+  const todo = checks.filter(c => !c[0]).length;
+  const list = `<ul class="checks">${checks.map(([ok, l]) => `<li><span class="${ok ? "ok" : "no"}">${ok ? "✓" : "!"}</span>${esc(l)}${ok ? "" : '<span class="no-t">nog invullen</span>'}</li>`).join("")}</ul>`;
+  const stations = st.filter(isStation).map(stationLabel);
+  if (ev.status === "draft"){
+    box.innerHTML = `<div class="step"><span class="sn">5</span><h3>Avond starten</h3></div>${list}
+      <p class="small muted" style="margin:0">${stations.length ? "Kassastations vanavond: " + esc(stations.join(", ")) + "." : "Er is nog geen kassastation aangezet."} Zodra je start, gaan de knoppen open.</p>
+      <button class="btn primary" id="g-go" style="padding:14px">${todo ? `Toch starten (${todo} open)` : "Avond starten"}</button>`;
+    $("#g-go").onclick = startEvent;
+    box.hidden = false;
+  } else {
+    box.hidden = true; box.innerHTML = "";
+  }
+}
+async function startEvent(){
+  const ev = eventById(S.sel); if (!ev) return;
+  const prices = ev.prices || {cash:0, card:0};
+  await saveEvent(ev.id, {status:"open", startedAt: Date.now(), priceLog: (ev.priceLog && ev.priceLog.length) ? ev.priceLog : [{at: Date.now(), cash: num(prices.cash), card: num(prices.cash)}]});
+  try{ await S.db.doc("beheer/config").set(Object.assign({}, S.config || {}, {active: ev.id})); }catch{ flash("Activeren mislukt, probeer opnieuw"); return; }
+  flash("Avond gestart · de kassa is open"); setTab("overzicht");
+}
+function newEvent(){
+  const today = new Date().toISOString().slice(0,10);
+  const prev = S.events[0];
+  sheet(`<h3>Nieuw event</h3>
+    <label class="f">Naam van het event<input type="text" id="ne-name" maxlength="60" placeholder="Club Copains"></label>
+    <div class="grid2">
+      <label class="f">Datum<input type="date" id="ne-date" value="${today}"></label>
+      <label class="f">Locatie<input type="text" id="ne-loc" maxlength="60" value="${esc(prev && prev.location || "")}"></label>
+      <label class="f">Beginuur<input type="time" id="ne-start" value="${prev && prev.startTime || "23:00"}"></label>
+      <label class="f">Einduur<input type="time" id="ne-end" value="${prev && prev.endTime || "06:00"}"></label>
+      <label class="f">Kassa sluit om<input type="time" id="ne-close" value="${prev && prev.closeTime || "04:00"}"></label>
+    </div>
+    <p class="small muted" style="margin:0">Daarna duid je de inkomstenbronnen en de kosten aan. De kassa gaat pas open als je de avond start.</p>
+    <div class="actions"><button class="btn" id="ne-x">Annuleren</button><button class="btn primary" id="ne-ok">Verder</button></div>`, root => {
+    $("#ne-x", root).onclick = closeSheet;
+    $("#ne-ok", root).onclick = async () => {
+      const name = $("#ne-name", root).value.trim(); if (!name){ $("#ne-name", root).focus(); return; }
+      const date = $("#ne-date", root).value || today;
+      const id = "ev-" + date.replace(/-/g,"") + "-" + rid().slice(0,4);
+      const streams = prev ? streamsOf(prev).map(s => clean({...s, amount: (s.id === "door" || s.id === "wc") ? undefined : 0, count: (s.id === "online" || s.id === "wc") ? 0 : undefined, updatedAt: undefined})) : defaultStreams();
+      const prices = prev && prev.prices ? {cash: num(prev.prices.cash), card: num(prev.prices.cash)} : {cash:0, card:0};
+      const doc = {name, date, location: $("#ne-loc", root).value.trim(), startTime: $("#ne-start", root).value, endTime: $("#ne-end", root).value, closeTime: $("#ne-close", root).value,
+        prices, priceLog: [], cost: null, float: prev ? (prev.float ?? null) : null, streams, status:"draft", createdAt: Date.now()};
+      try{ await S.db.doc("beheer/config/events/" + id).set(doc); closeSheet(); S.sel = id; syncSubs(); paintedFor = null; boxesFor = ""; setTab("gegevens"); flash("Event aangemaakt · duid nu de inkomstenbronnen aan"); }
+      catch(e){ flash("Aanmaken mislukt, probeer opnieuw"); }
+    };
+  });
+}
+
+/* ----- tab 2: overzicht ----- */
+function stagePrice(v, typed){
+  const ev = eventById(S.sel); if (!ev) return;
+  v = Math.max(0, Math.round(v*100)/100);
+  S.pending = v === num(ev.prices && ev.prices.cash) ? null : v;
+  if (!typed) $("#p-val").value = v;
+  onData();
+}
+function renderPriceCard(ev){
+  const pv = $("#p-val"); if (!pv) return;
+  const live = ev.prices && !blank(ev.prices.cash) ? num(ev.prices.cash) : null;
+  const pend = S.pending !== null && S.pending !== undefined;
+  if (document.activeElement !== pv) pv.value = pend ? S.pending : (live ?? "");
+  $("#p-pending").hidden = !pend;
+  $("#p-live").innerHTML = pend ? `Nu aan de kassa: <b>${eur(live)}</b> · nieuw: <b class="hl">${eur(S.pending)}</b>` : "";
+  $("#p-livenote").textContent = pend ? "De kassa werkt pas met de nieuwe prijs als je doorstuurt." : (ev.status === "open" ? "Dit is de prijs die de kassa nu gebruikt." : "");
+  $("#o-price").hidden = !streamsOf(ev).find(s => s.id === "door").on;
+}
+function renderScenarios(C){
+  const box = $("#o-scen"), ev = C.ev;
+  if (!C.cost){ $("#o-scen-h").textContent = "Tot break-even"; box.innerHTML = '<p class="muted small" style="margin:0">Vul de kosten van de avond in bij Gegevens om te zien wat je nog moet verkopen.</p>'; return; }
+  const rem = C.cost - C.net;
+  const P = id => C.per.find(p => p.s.id === id);
+  const door = P("door"), online = P("online");
+  const pend = S.pending !== null && S.pending !== undefined;
+  const price = pend ? S.pending : num(ev.prices && ev.prices.cash);
+  const tVat = door.s.on ? num(door.s.vat) : num(online.s.vat);
+  const perTicket = (door.s.on || online.s.on) ? price / (1 + tVat/100) : 0;
+  const flex = C.per.filter(p => p.s.on && !sFixed(p.s) && p.unit > 0);
+  const fixed = C.per.filter(p => p.s.on && sFixed(p.s) && p.s.id !== "door" && p.s.id !== "online");
+  $("#o-scen-h").textContent = rem <= 0 ? "Break-even behaald" : "Tot break-even";
+  if (rem <= 0){
+    box.innerHTML = `<p style="margin:0">Alles wat nu nog binnenkomt is winst.${perTicket ? ` Elk extra ticket brengt ${eur(perTicket)} op.` : ""}</p>`;
+    return;
+  }
+  const n = v => Math.ceil(v).toLocaleString("nl-BE");
+  const L = [];
+  if (perTicket > 0) L.push([n(rem / perTicket), `tickets (deur of online) à ${eur(price)}`, `${eur(perTicket)} per ticket zonder ${tVat}% btw`]);
+  flex.forEach(p => { const x = Math.ceil(rem / p.unit); L.push([eur0(x), `extra ${esc(sName(p.s).toLowerCase())}, incl. btw`, `${esc(sName(p.s))} komt dan op ${eur0(p.amount + x)} in totaal · bij ${num(p.s.vat)}% btw en ${p.margin}% marge blijft ${eur(p.unit * 100)} over per €100`]); });
+  fixed.forEach(p => { const pr = p.s.id === "wc" ? num(p.s.price) : (priceList(p.s.price)[0] || 0); if (pr > 0) L.push([n(rem / (pr * p.unit)), `× ${esc(sName(p.s).toLowerCase())} à ${eur(pr)}`, ""]); });
+  const mixes = [];
+  if (perTicket > 0) flex.slice(0, 2).forEach(p => { const x = Math.ceil(rem*.5 / p.unit); mixes.push(`<div class="scen"><b>${n(rem*.5 / perTicket)}</b><span>tickets <b style="font-family:var(--body);font-size:inherit">+ ${eur0(x)}</b> ${esc(sName(p.s).toLowerCase())}<span class="small muted" style="display:block">${esc(sName(p.s))} komt dan op ${eur0(p.amount + x)} in totaal</span></span></div>`); });
+  const visitors = C.T.inN + C.T.onlineN;
+  const barP = flex.find(p => p.s.id === "bar") || flex[0];
+  if (perTicket > 0 && barP && barP.amount > 0 && visitors > 0){
+    const spend = barP.amount / visitors;
+    const per = perTicket + spend * barP.unit;
+    mixes.push(`<div class="scen"><span class="or">of met extra bezoekers</span></div><div class="scen"><b>${n(rem / per)}</b><span>extra bezoekers met een ticket die elk, zoals nu, gemiddeld ${eur(spend)} aan ${esc(sName(barP.s).toLowerCase())} uitgeven</span></div>`);
+  }
+  box.innerHTML = `<p style="margin:0">Nog <b class="hl">${eur(rem)}</b> nodig. Dat is één van deze:</p>${pend ? '<p class="small" style="margin:0;color:var(--warn)">Berekend met de nieuwe deurprijs die je nog niet doorstuurde.</p>' : ""}` +
+    (L.length ? L.map((x, i) => `${i ? '<div class="scen"><span class="or">of</span></div>' : ""}<div class="scen"><b>${x[0]}</b><span>${x[1]}${x[2] ? `<span class="small muted" style="display:block">${x[2]}</span>` : ""}</span></div>`).join("") : '<p class="small muted" style="margin:0">Vul de deurprijs en de marges in bij Gegevens.</p>') +
+    (mixes.length ? `${mixes[0].includes("met extra bezoekers") ? "" : '<div class="scen"><span class="or">of half om half</span></div>'}${mixes.join("")}` : "");
+}
+let boxesFor = "";
+function renderOmzet(C){
+  const wrap = $("#o-omzet"); if (!wrap) return;
+  const sig = C.ev.id + "|" + C.per.map(p => p.s.id + (p.s.on ? 1 : 0) + (p.s.mode || "")).join(",");
+  const ex = LS.get("bep:vat","ex") === "ex", lab = ex ? "excl. btw" : "incl. btw";
+  if (boxesFor !== sig){
+    boxesFor = sig;
+    const html = [];
+    C.per.forEach((p, i) => {
+      if (!p.s.on) return;
+      const s = p.s; let ins = "";
+      if (s.id === "online") ins = `<div class="ins"><label class="f">Aantal tickets<input type="number" inputmode="numeric" data-bx="count" data-i="${i}" value="${blank(s.count) || !num(s.count) ? "" : s.count}"></label><label class="f">Bedrag incl. btw (€)<input type="number" inputmode="decimal" data-bx="amount" data-i="${i}" value="${blank(s.amount) || !num(s.amount) ? "" : s.amount}"></label></div>`;
+      else if (!sFixed(s)) ins = `<div class="ins"><label class="f">${isStation(s) ? "Totale omzet incl. btw (€), naast wat de kassa tikte" : "Totale omzet incl. btw (€)"}<input type="number" inputmode="decimal" data-bx="amount" data-i="${i}" value="${blank(s.amount) || !num(s.amount) ? "" : s.amount}"></label></div>`;
+      html.push(`<div class="ln"><div><b>${esc(sName(s))}</b><span class="sub" id="om-s-${i}"></span></div><div class="val" id="om-v-${i}"></div>${ins}</div>`);
+    });
+    html.push(`<div class="ln tot"><div><b>Totale omzet</b><span class="sub" id="om-tot-s"></span></div><div class="val" id="om-tot"></div></div>`);
+    wrap.innerHTML = html.join("");
+    wrap.querySelectorAll("[data-bx]").forEach(inp => inp.addEventListener("input", onBoxInput));
+  }
+  const show = (a, vat) => ex ? a / (1 + num(vat)/100) : a;
+  const put = (id, v) => { const el = $(id); if (el) el.innerHTML = v; };
+  C.per.forEach((p, i) => {
+    if (!p.s.on) return;
+    const s = p.s, vat = num(s.vat);
+    let sub = `btw ${vat}%`;
+    if (s.id === "door") sub = `${C.T.cashN} cash · ${C.T.cardN} Bancontact · ${C.T.freeN} gratis · btw ${vat}%`;
+    else if (s.id === "online") sub = `${num(s.count)} tickets · btw ${vat}%`;
+    else if (sFixed(s)) sub = `${p.tapped.n} × ${s.id === "wc" ? eur(num(s.price)) : esc(priceList(s.price).map(eur).join(" / ") || "—")} via kassa · btw ${vat}%`;
+    else sub = (p.margin === null ? `btw ${vat}% · <span style="color:var(--warn)">winstmarge nog invullen bij Gegevens</span>` : `btw ${vat}% · winstmarge <b>${p.margin}%</b>`) + (isStation(s) && p.tapped.n ? ` · ${p.tapped.n} via kassa` : "") + (s.updatedAt ? ` · bijgewerkt ${hm(s.updatedAt)}` : "");
+    put("#om-s-" + i, sub);
+    put("#om-v-" + i, `${eur(show(p.amount, vat))}<span class="sub">blijft over ${eur(p.contrib)}</span>`);
+  });
+  put("#om-tot", `${eur(ex ? C.exTotal : C.gross)}<span class="sub">blijft over ${eur(C.net)}</span>`);
+  put("#om-tot-s", `${lab} · "blijft over" = zonder btw en na winstmarge`);
+  const sc = $("#s-cost"); if (sc && document.activeElement !== sc) sc.value = blank(C.ev.cost) ? "" : C.ev.cost;
+}
+function renderSummary(C){
+  const box = $("#o-sum"); if (!box) return;
+  const win = C.result >= 0, done = C.cost > 0 && C.net >= C.cost;
+  const ex = LS.get("bep:vat","ex") === "ex";
+  box.innerHTML = `<div class="bar"><h2>Stand van de avond</h2><div class="spacer"></div><div class="seg vat-seg" role="group" aria-label="Omzet tonen"><button data-v="ex"${ex ? ' class="on"' : ""}>Excl. btw</button><button data-v="in"${ex ? "" : ' class="on"'}>Incl. btw</button></div></div>
+    <div class="sum">
+      <span class="k">Omzet ${ex ? "excl." : "incl."} btw</span><span class="v vbig">${eur0(ex ? C.exTotal : C.gross)}</span>
+      <span class="k">Daarvan blijft over na winstmarges<span style="display:block;font-weight:500;font-size:11px">excl. btw · dit telt voor break-even</span></span><span class="v" style="font-size:16px">${eur0(C.net)}</span>
+      <span class="k">Kosten van de avond</span><span class="v">− ${eur0(C.cost)}</span>
+      <span class="rule"></span>
+      <span class="k" style="font-size:15px;color:var(--fg)">${win ? "Winst" : "Verlies"} nu</span><span class="v vbig" style="color:var(${win ? "--good" : "--bad"})">${win ? "" : "− "}${eur0(Math.abs(C.result))}</span>
+    </div>
+    ${C.cost ? `<div class="track${done ? " done" : ""}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(C.pct)}"><i style="width:${C.pct}%"></i></div>
+    <span class="small muted">${done ? `Break-even behaald${C.ev.breakEvenAt ? " om " + hm(C.ev.breakEvenAt) : ""}` : `${Math.round(C.pct)}% van de kosten gedekt`}</span>` : '<span class="small muted">Vul de kosten in bij Gegevens om break-even te volgen.</span>'}`;
+  box.querySelectorAll(".vat-seg [data-v]").forEach(b => b.onclick = () => { LS.set("bep:vat", b.dataset.v); document.querySelectorAll("#vat-seg [data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === b.dataset.v)); onData(); });
+}
+function onBoxInput(e){
+  const ev = eventById(S.sel); if (!ev) return;
+  const arr = streamsOf(ev); const s = arr[+e.target.dataset.i]; if (!s) return;
+  s[e.target.dataset.bx] = e.target.value === "" ? 0 : num(e.target.value); s.updatedAt = Date.now();
+  saveStreams(ev.id, arr, false);
+}
+
+/* ----- tab 3: live ----- */
+function renderFeed(C){
+  const sts = C.streams;
+  const stName = id => { const s = sts.find(x => x.id === id); return s ? (isStation(s) || s.id === "door" ? stationLabel(s) || sName(s) : sName(s)) : ""; };
+  const rows = C.rows.slice(0, S.feedLimit);
+  $("#o-feed").innerHTML = rows.map(r => {
+    const label = r.e.k === "tip" ? `Fooi ${r.e.m === "card" ? "Bancontact" : "cash"}` : KIND[r.k] + (r.c && !r.self && r.c.action !== "void" ? ` <span class="tag warn">was ${KIND[r.e.k]}</span>` : "");
+    return `<div class="row${r.void ? " void" : ""}" data-key="${esc(r.key)}" style="cursor:pointer" tabindex="0" role="button">
+      <span class="t">${hm(r.e.t)}</span><i class="dot ${r.k}"></i>
+      <span class="who">${label} · <span class="muted">${esc(who(r.uid))} · ${esc(stName(r.s))}</span>${r.self ? ' <span class="tag bad">Geannuleerd door kassa</span>' : r.void ? ' <span class="tag bad">Geannuleerd</span>' : ""}</span>
+      <span class="amt">${r.k === "free" ? "—" : eur(r.p)}</span>
+      ${r.self ? `<div class="note own">Reden: ${esc(r.e.xr)}</div>` : ""}${r.e.n ? `<div class="note own">${esc(who(r.uid))}: ${esc(r.e.n)}</div>` : ""}
+    </div>`;
+  }).join("") || '<p class="muted small" style="margin:0">Nog geen registraties. Zodra iemand tikt, verschijnt het hier binnen enkele seconden.</p>';
+  $("#o-more").hidden = C.rows.length <= S.feedLimit;
+  $("#o-feed").querySelectorAll("[data-key]").forEach(el => { const go = () => correct(C, el.dataset.key); el.onclick = go; el.onkeydown = ev => { if (ev.key === "Enter") go(); }; });
+}
+function correct(C, key){
+  const r = C.rows.find(x => x.key === key); if (!r) return;
+  if (r.self){ sheet(`<h3>${hm(r.e.t)} · ${esc(KIND[r.e.k])} · ${esc(who(r.uid))}</h3><p style="margin:0">Deze registratie werd geannuleerd door de kassa.</p><div class="note own" style="grid-column:auto">Reden: ${esc(r.e.xr)}</div><div class="actions"><button class="btn" id="c-x">Sluiten</button></div>`, root => { $("#c-x", root).onclick = closeSheet; }); return; }
+  const opts = r.e.k === "tip" ? [["void","Annuleren"]] : [["void","Annuleren"],["cash","Was cash"],["card","Was Bancontact"],["free","Was gratis"]].filter(o => o[0] !== r.e.k);
+  sheet(`<h3>${hm(r.e.t)} · ${esc(KIND[r.e.k])} · ${esc(who(r.uid))}</h3>
+    ${r.e.n ? `<div class="note own" style="grid-column:auto">${esc(r.e.n)}</div>` : ""}
+    <div class="seg" role="group">${opts.map(o=>`<button data-a="${o[0]}"${r.c && r.c.action===o[0]?' class="on"':""}>${o[1]}</button>`).join("")}</div>
+    <label class="f">Reden (zichtbaar voor de medewerker)<input type="text" id="c-reason" maxlength="160" value="${esc(r.c && r.c.reason || "")}"></label>
+    <div class="actions">${r.c ? '<button class="btn danger" id="c-undo">Correctie weghalen</button>' : ""}<button class="btn" id="c-x">Sluiten</button><button class="btn primary" id="c-ok" ${r.c?"":"disabled"}>Opslaan</button></div>`, root => {
+    let a = r.c && r.c.action;
+    root.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { a = b.dataset.a; root.querySelectorAll("[data-a]").forEach(x=>x.classList.toggle("on", x===b)); $("#c-ok",root).disabled = false; });
+    $("#c-x", root).onclick = closeSheet;
+    $("#c-ok", root).onclick = async () => { if (!a) return; await writeCorr(C.ev.id, key, {action:a, reason:$("#c-reason",root).value.trim(), at:Date.now()}); closeSheet(); flash("Correctie opgeslagen"); };
+    const u = $("#c-undo", root); if (u) u.onclick = async () => { await writeCorr(C.ev.id, key, null); closeSheet(); flash("Correctie weggehaald"); };
+  });
+}
+let corrBusy = Promise.resolve();
+function writeCorr(evId, key, val){
+  corrBusy = corrBusy.then(async () => {
+    const items = Object.assign({}, (S.corr[evId] && S.corr[evId].items) || {});
+    if (val) items[key] = val; else delete items[key];
+    S.corr[evId] = {items}; onData();
+    try{ await S.db.doc("beheer/config/corrections/" + evId).set({items}); }catch(e){ flash("Opslaan mislukt, probeer opnieuw"); }
+  });
+  return corrBusy;
+}
+function renderLanes(C){
+  const box = $("#o-lanes"); const bb = bins(C, true);
+  const names = [...new Set(Object.keys(S.kd[C.ev.id] || {}).filter(u => C.rows.some(r => r.uid === u)).map(who))];
+  const uids = names;
+  if (!bb || !uids.length){ box.innerHTML = '<p class="muted small" style="margin:0">Zodra er getikt wordt, krijgt elke kassamedewerker hier een eigen lijn.</p>'; return; }
+  const {B, size} = bb, start = B[0].t;
+  const per = {};
+  uids.forEach(u => per[u] = B.map(b => ({t:b.t, cash:0, card:0, free:0})));
+  C.live.forEach(r => { const p = per[who(r.uid)]; if (r.k === "tip" || !p) return; const i = Math.floor((r.e.t - start) / size); if (p[i]) p[i][r.k]++; });
+  const max = Math.max(1, ...uids.flatMap(u => per[u].map(b => b.cash + b.card + b.free)));
+  const W = 640, H = 56, pb = 14, bw = W / B.length, gap = Math.min(3, bw * .2);
+  const now = Date.now();
+  box.innerHTML = uids.map(u => {
+    const mine = C.live.filter(r => who(r.uid) === u && r.k !== "tip");
+    const all = C.rows.filter(r => who(r.uid) === u);
+    const last = all.length ? Math.max(...all.map(r => r.e.t)) : 0;
+    const hour = mine.filter(r => now - r.e.t < 3600000).length;
+    const flags = all.filter(r => r.self || r.c || r.e.n).length;
+    const lastRow = all.slice().sort((a,b) => b.e.t - a.e.t)[0]; const st = lastRow && lastRow.s; const sObj = C.streams.find(s => s.id === st);
+    let bars = "";
+    per[u].forEach((b, i) => {
+      let base = 0; const x = i * bw + gap/2, w = Math.max(2, bw - gap);
+      ["cash","card","free"].forEach(k => { if (!b[k]) return; const h = (H - pb) * b[k] / max; const y = H - pb - (base + b[k]) / max * (H - pb);
+        bars += `<rect x="${x}" y="${y}" width="${w}" height="${Math.max(1, h - (base ? 2 : 0))}" rx="${Math.min(2, w/3)}" fill="var(--${k})"/>`; base += b[k]; });
+    });
+    let xl = ""; const every = Math.max(1, Math.ceil(B.length / 6));
+    B.forEach((b, i) => { if (i % every === 0) xl += `<text x="${i*bw + 1}" y="${H-2}" font-size="10" fill="var(--muted)">${hm(b.t)}</text>`; });
+    const active = now - last < 600000;
+    const cash = mine.filter(r => r.k === "cash"), card = mine.filter(r => r.k === "card");
+    return `<div class="lane" data-u="${esc(u)}" role="button" tabindex="0" style="cursor:pointer">
+      <div class="bar small"><i class="live-dot${active ? " on" : ""}"></i><b>${esc(u)}</b><span class="muted">${sObj ? esc(stationLabel(sObj)) : ""}</span>${flags ? `<span class="tag warn">${flags} opvallend</span>` : ""}<div class="spacer"></div>
+      <span class="num">${mine.length} · ${hour}/uur</span></div>
+      <svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>${bars}${xl}</svg>
+      <div class="bar small muted num"><span><i class="dot cash"></i> ${eur(cash.reduce((a,r)=>a+r.p,0))}</span><span><i class="dot card"></i> ${eur(card.reduce((a,r)=>a+r.p,0))}</span><div class="spacer"></div><span>${last ? "laatste tik " + hm(last) : ""}</span></div></div>`;
+  }).join("");
+  box.querySelectorAll("[data-u]").forEach(el => { const go = () => staffSheet(el.dataset.u); el.onclick = go; el.onkeydown = e => { if (e.key === "Enter") go(); }; });
+}
+function staffSheet(name){
+  const C = compute(S.sel); if (!C) return;
+  const s = staffStats(C).find(x => who(x.uid) === name) || {n:0};
+  const all = C.rows.filter(r => who(r.uid) === name);
+  const live = all.filter(r => !r.void);
+  const sum = k => live.filter(r => r.k === k).reduce((a,r)=>a+r.p,0);
+  const cnt = k => live.filter(r => r.k === k).length;
+  const flags = all.filter(r => r.self || r.c || r.e.n);
+  sheet(`<h3>${esc(name)}</h3>
+    <div class="tiles">
+      <div class="tile"><span class="lab">Registraties</span><b>${s.n || 0}</b><span class="small muted">${s.perHour ? Math.round(s.perHour) + " per actief uur" : ""}</span></div>
+      <div class="tile"><span class="lab"><i class="dot cash"></i>Cash</span><b>${cnt("cash")}</b><span class="small muted num">${eur(sum("cash"))}</span></div>
+      <div class="tile"><span class="lab"><i class="dot card"></i>Bancontact</span><b>${cnt("card")}</b><span class="small muted num">${eur(sum("card"))}</span></div>
+      <div class="tile"><span class="lab"><i class="dot free"></i>Gratis · fooi</span><b>${cnt("free")}</b><span class="small muted num">fooi ${eur(sum("tip"))}</span></div>
+    </div>
+    <p class="small muted" style="margin:0">Piek ${s.peak || 0} in één uur${s.first ? ` · actief ${hm(s.first)}–${hm(s.last)}` : ""} · ${s.selfX || 0} geannuleerd · ${s.corr || 0} gecorrigeerd · ${(s.tapsNoSumup||0) + (s.sumupNoTap||0)} SumUp-verschillen</p>
+    ${flags.length ? `<h2>Opvallend</h2><div class="list">${flags.map(r => `<div class="row" style="grid-template-columns:auto 1fr"><span class="t">${hm(r.e.t)}</span><span>${esc(KIND[r.e.k])} ${r.self ? '<span class="tag bad">geannuleerd</span>' : r.c ? `<span class="tag warn">${r.c.action === "void" ? "geannuleerd door jou" : "→ " + KIND[r.c.action]}</span>` : ""}</span>${r.self ? `<div class="note own">Reden: ${esc(r.e.xr)}</div>` : ""}${r.e.n ? `<div class="note own">${esc(r.e.n)}</div>` : ""}</div>`).join("")}</div>` : ""}
+    <h2>Laatste registraties</h2>
+    <div class="list">${all.slice(0, 30).map(r => `<div class="row${r.void ? " void" : ""}" style="grid-template-columns:auto auto 1fr auto"><span class="t">${hm(r.e.t)}</span><i class="dot ${r.k}"></i><span class="who">${esc(r.e.k === "tip" ? "Fooi" : KIND[r.k])}</span><span class="amt">${r.k === "free" ? "—" : eur(r.p)}</span></div>`).join("") || '<p class="muted small">Nog niets.</p>'}</div>
+    <div class="actions"><button class="btn primary" id="ss-x">Sluiten</button></div>`, r => { $("#ss-x", r).onclick = closeSheet; });
+}
+
+/* ----- tab 4: opvallend ----- */
+function renderIssues(C){
+  const rc = S.recon[C.ev.id]; const rr = rc && rc.result && rc.result.byUid || {};
+  const items = [];
+  C.rows.forEach(r => {
+    if (!r.c && !r.e.n && !r.self) return;
+    const ex = r.explain["c:" + r.e.id];
+    const what = r.self ? '<span class="tag bad">Geannuleerd door kassa</span>' : r.c ? `<span class="tag warn">${r.c.action === "void" ? "Geannuleerd door management" : "Aangepast naar " + KIND[r.c.action]}</span>` : '<span class="tag">Notitie</span>';
+    items.push({t:r.e.t, html:`<b>${hm(r.e.t)}</b> · ${esc(who(r.uid))} · ${esc(r.e.k === "tip" ? "Fooi" : KIND[r.e.k])} ${r.k === "free" ? "" : eur(r.e.p)} ${what}
+      ${r.self ? `<div class="note own">Reden: ${esc(r.e.xr)}</div>` : ""}${r.e.n ? `<div class="note own">Notitie: ${esc(r.e.n)}</div>` : ""}${r.c && r.c.reason ? `<div class="note">Management: ${esc(r.c.reason)}</div>` : ""}${ex ? `<div class="note own">Uitleg: ${esc(ex)}</div>` : ""}`});
+  });
+  const rowsBy = new Map(C.rows.map(r => [r.uid + ":" + r.e.id, r]));
+  for (const [uid, v] of Object.entries(rr)){
+    (v.taps || []).forEach(id => { const r = rowsBy.get(uid + ":" + id); if (!r) return; const ex = r.explain["t:" + id];
+      items.push({t:r.e.t, html:`<b>${hm(r.e.t)}</b> · ${esc(who(uid))} · <span class="tag bad">Bancontact ${eur(r.p)} getikt, niet in SumUp</span>${ex ? `<div class="note own">Uitleg: ${esc(ex)}</div>` : ""}`}); });
+    (v.tx || []).forEach(x => { const doc = (S.kd[C.ev.id]||{})[uid]; const ex = doc && doc.explain && doc.explain["x:" + x.r];
+      items.push({t:x.t, html:`<b>${hm(x.t)}</b> · ${esc(who(uid))} · <span class="tag bad">${eur(x.a)} in SumUp, niet getikt</span>${ex ? `<div class="note own">Uitleg: ${esc(ex)}</div>` : ""}`}); });
+  }
+  ((rc && rc.result && rc.result.orphan) || []).forEach(x => items.push({t:x.t, html:`<b>${hm(x.t)}</b> · <span class="tag bad">${eur(x.a)} in SumUp, niet toe te wijzen</span>`}));
+  items.sort((a,b) => b.t - a.t);
+  $("#o-issues").innerHTML = items.length ? `<div class="list">${items.map(i => `<div class="row" style="grid-template-columns:1fr">${i.html}</div>`).join("")}</div>`
+    : '<p class="muted small" style="margin:0">Niets opvallends. Annulaties, notities, correcties en verschillen met SumUp komen hier samen.</p>';
+  return items.length;
+}
+
+/* ----- statistieken ----- */
+function staffStats(C){
+  const rc = S.recon[C.ev.id]; const rr = rc && rc.result && rc.result.byUid || {};
+  const groups = {};
+  Object.keys(S.kd[C.ev.id] || {}).forEach(u => { (groups[who(u)] = groups[who(u)] || []).push(u); });
+  return Object.values(groups).map(uids => {
+    const uid = uids[0], has = r => uids.includes(r.uid);
+    const ts = C.live.filter(r => has(r) && r.k !== "tip").map(r => r.e.t).sort((a,b)=>a-b);
+    const n = ts.length;
+    let peak = 0, j = 0;
+    for (let i = 0; i < n; i++){ while (ts[i] - ts[j] > 3600000) j++; peak = Math.max(peak, i - j + 1); }
+    let active = 0; for (let i = 1; i < n; i++){ const g = ts[i]-ts[i-1]; if (g < 1200000) active += g; }
+    const perHour = active > 600000 ? n / (active/3600000) : null;
+    const gaps = []; for (let i = 1; i < n; i++){ const g = ts[i]-ts[i-1]; if (g < 300000) gaps.push(g); }
+    gaps.sort((a,b)=>a-b);
+    const mine = C.rows.filter(has);
+    const rsum = k => uids.reduce((a, u) => a + (rr[u] && rr[u][k] || []).length, 0);
+    return {uid, uids, n, peak, perHour, med: gaps.length ? gaps[Math.floor(gaps.length/2)]/1000 : null, first: ts[0], last: ts[n-1],
+      corr: mine.filter(r => r.c && !r.self).length, selfX: mine.filter(r => r.self).length, notes: mine.filter(r => r.e.n).length,
+      tapsNoSumup: rsum("taps"), sumupNoTap: rsum("tx"),
+      tips: mine.filter(r => r.k === "tip" && !r.void).reduce((a,r)=>a+r.p,0)};
+  }).filter(s => s.n || s.corr || s.notes || s.selfX).sort((a,b) => b.n - a.n);
+}
+function renderStaff(C){
+  const st = staffStats(C);
+  if (!st.length){ $("#o-staff").innerHTML = '<p class="muted small" style="margin:0">Nog geen medewerkers actief.</p>'; return; }
+  $("#o-staff").innerHTML = `<table><thead><tr><th>Medewerker</th><th>Tikken</th><th>Per uur</th><th>Piek/uur</th><th>Fouten</th><th>Annul.</th><th>Correcties</th><th>SumUp ≠</th><th>Fooi</th></tr></thead><tbody>
+    ${st.map(s => `<tr><td>${esc(who(s.uid))}</td><td>${s.n}</td><td>${s.perHour ? Math.round(s.perHour) : "—"}</td><td>${s.peak}</td><td><b>${s.selfX + s.corr + s.tapsNoSumup + s.sumupNoTap}</b></td><td>${s.selfX || "—"}</td><td>${s.corr || "—"}</td><td>${s.tapsNoSumup + s.sumupNoTap || "—"}</td><td>${s.tips ? eur(s.tips) : "—"}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+function bins(C, all){
+  const ts = C.live.filter(r => r.k !== "tip" && (all || r.s === "door"));
+  if (!ts.length) return null;
+  const min = Math.min(...ts.map(r => r.e.t)), max = Math.max(...ts.map(r => r.e.t), all ? Date.now() : 0);
+  const span = max - min;
+  const size = span > 10*3600000 ? 1800000 : 900000;
+  const start = Math.floor(min / size) * size, end = Math.floor(Math.min(max, min + 14*3600000) / size) * size;
+  const B = [];
+  for (let t = start; t <= end; t += size) B.push({t, cash:0, card:0, free:0});
+  ts.forEach(r => { const i = Math.floor((r.e.t - start) / size); if (B[i]) B[i][r.k]++; });
+  return {B, size};
+}
+function renderChart(C){
+  const box = $("#o-chart"); const bb = bins(C, false);
+  if (!bb){ box.innerHTML = '<p class="muted small" style="margin:0">De grafiek vult zich zodra de eerste mensen aan de deur binnenkomen.</p>'; return; }
+  const {B, size} = bb;
+  const W = 640, H = 220, pl = 30, pr = 8, pt = 10, pb = 26;
+  const max = Math.max(1, ...B.map(b => b.cash + b.card + b.free));
+  const step = max <= 5 ? 1 : max <= 12 ? 2 : max <= 30 ? 5 : max <= 60 ? 10 : 20;
+  const top = Math.ceil(max / step) * step;
+  const y = v => pt + (H - pt - pb) * (1 - v / top);
+  const bw = (W - pl - pr) / B.length, gap = Math.min(4, bw * .2);
+  let g = "";
+  for (let v = 0; v <= top; v += step) g += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  let bars = "";
+  B.forEach((b, i) => {
+    let base = 0; const x = pl + i * bw + gap/2, w = Math.max(2, bw - gap);
+    ["cash","card","free"].forEach(k => {
+      if (!b[k]) return;
+      const y0 = y(base), y1 = y(base + b[k]);
+      bars += `<rect x="${x}" y="${y1}" width="${w}" height="${Math.max(1, y0 - y1 - (base ? 2 : 0))}" rx="${Math.min(3, w/3)}" fill="var(--${k})"/>`;
+      base += b[k];
+    });
+    bars += `<rect x="${pl + i*bw}" y="${pt}" width="${bw}" height="${H-pt-pb}" fill="transparent" data-i="${i}" style="cursor:pointer"/>`;
+  });
+  const every = Math.max(1, Math.ceil(B.length / 8));
+  let xl = "";
+  B.forEach((b, i) => { if (i % every === 0) xl += `<text x="${pl + i*bw + bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${hm(b.t)}</text>`; });
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Binnenkomst aan de deur per ${size===900000?"kwartier":"halfuur"}">${g}${bars}${xl}</svg>`;
+  const tip = $("#o-chart-tip");
+  box.querySelectorAll("[data-i]").forEach(r => {
+    const show = () => { const b = B[+r.dataset.i]; tip.classList.remove("muted"); tip.textContent = `${hm(b.t)}–${hm(b.t + size)} · ${b.cash+b.card+b.free} binnen · ${b.cash} cash · ${b.card} Bancontact · ${b.free} gratis`; };
+    r.addEventListener("mouseenter", show); r.addEventListener("click", show);
+  });
+}
+function priceLevels(C){
+  const log = (C.ev.priceLog || []).slice().sort((a,b) => a.at - b.at);
+  if (!log.length) return [];
+  const door = C.live.filter(r => r.s === "door" && (r.k === "cash" || r.k === "card"));
+  const end = C.ev.closedAt || Date.now();
+  return log.map((l, i) => {
+    const from = l.at, to = i + 1 < log.length ? log[i+1].at : end;
+    const n = door.filter(r => r.e.t >= from && r.e.t < to).length;
+    const hrs = Math.max(0, (to - from) / 3600000);
+    return {price: num(l.cash), from, to, n, perHour: hrs > 0.1 ? n / hrs : null, net: n * num(l.cash)};
+  }).filter(x => x.to > x.from);
+}
+function renderLevels(C){
+  const L = priceLevels(C);
+  $("#o-levels").innerHTML = L.length ? `<table><thead><tr><th>Prijs</th><th>Van</th><th>Tot</th><th>Verkocht</th><th>Per uur</th><th>Omzet</th></tr></thead><tbody>
+    ${L.map(x => `<tr><td>${eur(x.price)}</td><td>${hm(x.from)}</td><td>${hm(x.to)}</td><td>${x.n}</td><td>${x.perHour !== null ? Math.round(x.perHour) : "—"}</td><td>${eur(x.net)}</td></tr>`).join("")}</tbody></table>`
+    : '<p class="muted small" style="margin:0">Verschijnt zodra de avond gestart is. Elke prijswijziging krijgt een eigen lijn, zodat je ziet wat een hogere of lagere prijs deed.</p>';
+}
+
+function askDelete(id){
+  const ev = eventById(id); if (!ev) return;
+  const n = Object.values(S.kd[id] || {}).reduce((a, d) => a + (d.entries || []).length, 0);
+  sheet(`<h3>${esc(ev.name)} verwijderen?</h3>
+    <p style="margin:0">Het event, ${n} registraties van de kassa, de correcties en de SumUp-vergelijking worden definitief gewist. Dit kan niet ongedaan gemaakt worden.</p>
+    <label class="f">Typ VERWIJDER om te bevestigen<input type="text" id="dl-in" autocomplete="off"></label>
+    <div class="actions"><button class="btn" id="dl-x">Annuleren</button><button class="btn danger" id="dl-ok" disabled>Definitief verwijderen</button></div>`, r => {
+    const inp = $("#dl-in", r), ok = $("#dl-ok", r);
+    inp.oninput = () => ok.disabled = inp.value.trim().toUpperCase() !== "VERWIJDER";
+    $("#dl-x", r).onclick = closeSheet;
+    ok.onclick = async () => {
+      ok.disabled = true; ok.textContent = "Bezig…";
+      try{
+        const uids = new Set([...Object.keys(S.cashiers), ...Object.keys(S.kd[id] || {})]);
+        for (const u of uids){ try{ await S.db.doc("kassa/" + u + "/events/" + id).delete(); }catch{} }
+        try{ await S.db.doc("beheer/config/corrections/" + id).delete(); }catch{}
+        try{ await S.db.doc("beheer/config/recon/" + id).delete(); }catch{}
+        await S.db.doc("beheer/config/events/" + id).delete();
+        if (S.config && S.config.active === id){ const cfg = Object.assign({}, S.config); delete cfg.active; await S.db.doc("beheer/config").set(cfg); }
+        delete S.kd[id]; delete S.pend[id];
+        S.events = S.events.filter(e => e.id !== id);
+        S.sel = null; paintedFor = null; boxesFor = "";
+        closeSheet(); flash("Event verwijderd"); onData();
+      }catch(e){ ok.textContent = "Definitief verwijderen"; ok.disabled = false; flash("Verwijderen mislukt, probeer opnieuw"); }
+    };
+  });
+}
+let closeArm = 0;
+async function closeEventFlow(){
+  const ev = eventById(S.sel); if (!ev) return;
+  const b = $("#o-close");
+  if (ev.status === "draft") return startEvent();
+  if (ev.status === "closed"){
+    await saveEvent(ev.id, {status:"open"});
+    await S.db.doc("beheer/config").set(Object.assign({}, S.config || {}, {active: ev.id}));
+    flash("Avond heropend"); return;
+  }
+  if (Date.now() - closeArm > 4000){ closeArm = Date.now(); b.textContent = "Tik nogmaals om af te sluiten"; setTimeout(() => { if (b.textContent.startsWith("Tik")) b.textContent = "Avond afsluiten"; }, 4000); return; }
+  closeArm = 0;
+  await saveEvent(ev.id, {status:"closed", closedAt: Date.now()});
+  flash("Avond afgesloten · rapport is definitief"); window.scrollTo(0,0);
+  sheet(`<h3>${esc(ev.name)} is afgesloten</h3>
+    <p style="margin:0">Wil je dit event met zijn statistieken bijhouden, of was het een test of een vergissing?</p>
+    <div class="actions"><button class="btn red" id="kd-del">Verwijderen</button><button class="btn primary" id="kd-keep">Bijhouden</button></div>`, r => {
+    $("#kd-keep", r).onclick = () => { closeSheet(); flash("Event bijgehouden"); };
+    $("#kd-del", r).onclick = () => { closeSheet(); askDelete(ev.id); };
+  });
+}
+
+/* ----- SumUp CSV ----- */
+function parseCSV(text){
+  const first = text.split(/\r?\n/)[0] || "";
+  const d = [";", ",", "\t"].sort((a,b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === d){ row.push(cur); cur = ""; }
+    else if (c === "\n" || c === "\r"){ if (c === "\r" && text[i+1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+    else cur += c;
+  }
+  if (cur || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function parseWhen(dateStr, timeStr){
+  const s = (dateStr + " " + (timeStr || "")).trim();
+  let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T]?(\d{1,2})?:?(\d{2})?:?(\d{2})?/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)).getTime();
+  m = s.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})[ ,T]*(\d{1,2})?:?(\d{2})?:?(\d{2})?/);
+  if (m){ const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return new Date(y, +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0)).getTime(); }
+  const t = Date.parse(s); return isNaN(t) ? null : t;
+}
+function parseAmt(v){
+  let s = String(v || "").replace(/[^\d,.\-]/g, "");
+  if (s.includes(",") && s.includes(".")) s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g,"").replace(",", ".") : s.replace(/,/g,"");
+  else s = s.replace(",", ".");
+  const n = parseFloat(s); return isFinite(n) ? n : null;
+}
+let csvRows = null;
+function onCsv(e){
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { csvRows = parseCSV(String(rd.result || "")); e.target.value = ""; showMapper(f.name); };
+  rd.readAsText(f);
+}
+function guess(h, words){ const i = h.findIndex(x => words.some(w => x.toLowerCase().includes(w))); return i; }
+function showMapper(fname){
+  if (!csvRows || csvRows.length < 2){ $("#o-map").innerHTML = '<p class="small" style="color:var(--bad);margin:0">Dit bestand bevat geen transacties. Kies de CSV-export uit het SumUp-dashboard.</p>'; return; }
+  const h = csvRows[0];
+  const opt = (sel, allowNone) => (allowNone ? '<option value="-1">—</option>' : "") + h.map((x,i) => `<option value="${i}"${i===sel?" selected":""}>${esc(x || "Kolom " + (i+1))}</option>`).join("");
+  const gD = guess(h, ["datum","date","tijdstip","created"]), gT = guess(h, ["tijd","time"]), gA = guess(h, ["totaal","total","bedrag","amount"]), gR = guess(h, ["transactie","transaction","code","id","ref"]), gS = guess(h, ["status"]), gDev = guess(h, ["toestel","terminal","device","kassa","merchant"]);
+  $("#o-map").innerHTML = `<div class="card" style="background:var(--surface-2)">
+    <b>${esc(fname)}</b><span class="small muted">${csvRows.length - 1} rijen gevonden. Controleer welke kolom wat is.</span>
+    <div class="grid2">
+      <label class="f">Datum (+ tijd)<select id="m-d">${opt(gD)}</select></label>
+      <label class="f">Tijd (indien apart)<select id="m-t">${opt(gT === gD ? -1 : gT, true)}</select></label>
+      <label class="f">Bedrag<select id="m-a">${opt(gA)}</select></label>
+      <label class="f">Transactie-ID<select id="m-r">${opt(gR, true)}</select></label>
+      <label class="f">Alleen rijen waar kolom…<select id="m-fc">${opt(gS >= 0 ? gS : gDev, true)}</select></label>
+      <label class="f">…deze waarde heeft<select id="m-fv"></select></label>
+    </div>
+    <div class="actions"><button class="btn" id="m-x">Annuleren</button><button class="btn primary" id="m-ok">Vergelijken</button></div></div>`;
+  const fc = $("#m-fc"), fv = $("#m-fv");
+  const fillVals = () => { const c = +fc.value; const vals = c < 0 ? [] : [...new Set(csvRows.slice(1).map(r => r[c]))].slice(0, 40);
+    fv.innerHTML = '<option value="">(alles)</option>' + vals.map(v => `<option${/succes|geslaagd|paid|betaald/i.test(v)?" selected":""}>${esc(v)}</option>`).join(""); };
+  fc.onchange = fillVals; fillVals();
+  $("#m-x").onclick = () => { $("#o-map").innerHTML = ""; csvRows = null; };
+  $("#m-ok").onclick = async () => {
+    const d = +$("#m-d").value, t = +$("#m-t").value, a = +$("#m-a").value, r = +$("#m-r").value, c = +fc.value, v = fv.value;
+    const tx = [];
+    csvRows.slice(1).forEach((row, i) => {
+      if (c >= 0 && v && row[c] !== v) return;
+      const when = parseWhen(row[d] || "", t >= 0 ? row[t] : ""); const amt = parseAmt(row[a]);
+      if (when == null || amt == null || amt <= 0) return;
+      tx.push({r: (r >= 0 && row[r]) ? String(row[r]).slice(0, 40) : "row" + i, t: when, a: Math.round(amt*100)/100});
+    });
+    if (!tx.length){ flash("Geen bruikbare transacties gevonden, controleer de kolommen"); return; }
+    $("#o-map").innerHTML = "";
+    await runRecon(tx, fname);
+  };
+}
+function matchSumup(C, tx){
+  const taps = C.live.filter(r => r.k === "card" || (r.k === "tip" && r.e.m === "card")).map(r => ({r, used:false}));
+  const res = {byUid:{}, orphan:[], matched:0};
+  const add = (uid, key, val) => { (res.byUid[uid] = res.byUid[uid] || {taps:[], tx:[]})[key].push(val); };
+  const txs = tx.slice().sort((a,b) => a.t - b.t).map(x => ({x, used:false}));
+  const near = (t, x) => Math.abs(t - x.t) <= WINDOW;
+  // pass 1: exact amount
+  txs.forEach(o => {
+    let best = null, bd = Infinity;
+    taps.forEach(p => { if (p.used || p.r.k === "tip" || !near(p.r.e.t, o.x) || Math.abs(p.r.p - o.x.a) > 0.009) return; const dd = Math.abs(p.r.e.t - o.x.t); if (dd < bd){ bd = dd; best = p; } });
+    if (best){ best.used = true; o.used = true; res.matched++; }
+  });
+  // pass 2: ticket + card tip in one payment
+  txs.forEach(o => {
+    if (o.used) return;
+    const cands = taps.filter(p => !p.used && near(p.r.e.t, o.x));
+    for (const a of cands) for (const b of cands){
+      if (a === b || a.r.k !== "card" || b.r.k !== "tip" || a.r.uid !== b.r.uid) continue;
+      if (Math.abs(a.r.p + b.r.p - o.x.a) < 0.01 && !o.used){ a.used = b.used = o.used = true; res.matched++; }
+    }
+  });
+  // pass 3: tip alone / price changed mid-night: nearest card tap within window
+  txs.forEach(o => {
+    if (o.used) return;
+    let best = null, bd = Infinity;
+    taps.forEach(p => { if (p.used || !near(p.r.e.t, o.x)) return; if (p.r.k === "tip" && Math.abs(p.r.p - o.x.a) > 0.009) return; const dd = Math.abs(p.r.e.t - o.x.t); if (dd < bd){ bd = dd; best = p; } });
+    if (best && Math.abs(best.r.p - o.x.a) < 0.009){ best.used = true; o.used = true; res.matched++; }
+  });
+  taps.forEach(p => { if (!p.used) add(p.r.uid, "taps", p.r.e.id); });
+  // attribute unmatched SumUp payments to the cashier who was tapping around that time
+  const all = C.live.filter(r => r.k !== "tip");
+  txs.forEach(o => {
+    if (o.used) return;
+    const around = new Map();
+    all.forEach(r => { const d = Math.abs(r.e.t - o.x.t); if (d <= 15*60000) around.set(r.uid, Math.min(around.get(r.uid) ?? Infinity, d)); });
+    if (around.size === 1) add([...around.keys()][0], "tx", o.x);
+    else if (around.size > 1){ const uid = [...around.entries()].sort((a,b)=>a[1]-b[1])[0][0]; add(uid, "tx", {...o.x, guess:true}); }
+    else res.orphan.push(o.x);
+  });
+  return res;
+}
+async function runRecon(tx, fname){
+  const C = compute(S.sel); if (!C) return;
+  const result = matchSumup(C, tx);
+  const doc = {tx, file: fname || (S.recon[S.sel] && S.recon[S.sel].file) || "", at: Date.now(), result};
+  S.recon[S.sel] = doc; onData();
+  try{ await S.db.doc("beheer/config/recon/" + S.sel).set(doc); flash("SumUp vergeleken"); setTab("controle"); }catch(e){ flash("Opslaan van de vergelijking mislukt"); }
+}
+function renderRecon(C){
+  const rc = S.recon[C.ev.id]; const box = $("#o-recon");
+  if (!rc){ box.innerHTML = '<p class="muted small" style="margin:0">Nog geen SumUp-gegevens. Laad hierboven de CSV van deze avond.</p>'; return; }
+  const r = rc.result || {byUid:{}, orphan:[]};
+  const taps = Object.values(r.byUid).reduce((a,v)=>a+(v.taps||[]).length,0), txs = Object.values(r.byUid).reduce((a,v)=>a+(v.tx||[]).length,0) + (r.orphan||[]).length;
+  const sum = rc.tx.reduce((a,x)=>a+x.a,0);
+  box.innerHTML = `<div class="kv"><span>SumUp-betalingen (${rc.tx.length})</span><span>${eur(sum)}</span>
+    <span>Bancontact getikt + kaartfooien</span><span>${eur(C.T.cardS + C.T.tipCard)}</span>
+    <span>Gekoppeld</span><span>${r.matched}</span></div>
+    <div class="bar">${taps ? `<span class="tag bad">${taps} getikt zonder SumUp</span>` : ""}${txs ? `<span class="tag bad">${txs} in SumUp zonder tik</span>` : ""}${!taps && !txs ? '<span class="tag good">Alles klopt met SumUp</span>' : ""}
+    <div class="spacer"></div><button class="btn" id="rc-again">Opnieuw vergelijken</button></div>
+    <p class="small muted" style="margin:0">Bestand: ${esc(rc.file)} · ${hm(rc.at)}. Verschillen staan per medewerker bij “Fouten, notities &amp; verschillen”.</p>`;
+  $("#rc-again").onclick = () => runRecon(rc.tx, rc.file);
+}
+
+/* ----- report ----- */
+function renderReport(C){
+  const box = $("#o-report");
+  const {ev, T} = C;
+  const final = ev.status === "closed";
+  const L = [];
+  const bb = bins(C, false);
+  const doorTs = C.live.filter(r => r.k !== "tip" && r.s === "door").map(r => r.e.t).sort((a,b)=>a-b);
+  if (!C.rows.length && !C.gross){ box.innerHTML = `<h2>Rapport</h2><p class="muted small" style="margin:0">Het rapport bouwt zich op tijdens de avond en wordt definitief bij het afsluiten.</p>`; return; }
+  // financieel
+  const fin = [];
+  fin.push(`Netto opbrengst <b>${eur(C.net)}</b> tegenover <b>${eur(C.cost)}</b> kosten: ${C.result >= 0 ? `<span class="hl">winst ${eur(C.result)}</span>` : `verlies ${eur(-C.result)}`}.`);
+  if (C.cost > 0) fin.push(`ROI: <b>${C.result >= 0 ? "" : "−"}${Math.abs(Math.round(C.result / C.cost * 100))}%</b> op ${eur0(C.cost)} kosten.`);
+  if (ev.breakEvenAt) fin.push(`Break-even bereikt om <b>${hm(ev.breakEvenAt)}</b>${ev.startedAt ? `, ${Math.round((ev.breakEvenAt - ev.startedAt)/60000)} minuten na de start` : ""}.`);
+  else if (C.cost) fin.push(`Break-even ${final ? "niet gehaald" : "nog niet gehaald"}: er ontbreekt ${eur(C.cost - C.net)}.`);
+  C.per.filter(p => p.s.on && p.amount > 0).sort((a,b) => b.contrib - a.contrib).forEach(p => fin.push(`<b>${esc(sName(p.s))}</b> · ${pct(p.contrib, C.net)}% · ${eur0(p.amount)} bruto · ${eur0(p.contrib)} na btw en marge`));
+  C.per.filter(p => p.missing && p.amount > 0).forEach(p => fin.push(`<span class="tag warn">Let op</span> ${esc(sName(p.s))} heeft geen marge en telt niet mee.`));
+  L.push(["Financieel", fin]);
+  // bezoekers
+  const door = [];
+  const paid = T.cashN + T.cardN, visitors = T.inN + T.onlineN;
+  if (visitors) door.push(`<b>${visitors}</b> bezoekers geregistreerd: ${T.onlineN} online tickets, ${paid} betaald aan de deur, ${T.freeN} gratis.`);
+  if (T.onlineN && paid) door.push(`${pct(T.onlineN, T.onlineN + paid)}% van de betalende bezoekers kocht online, ${pct(paid, T.onlineN + paid)}% aan de deur.`);
+  if (paid) door.push(`Aan de deur betaalde ${pct(T.cardN, paid)}% met Bancontact en ${pct(T.cashN, paid)}% cash. Gemiddelde deurprijs ${eur(T.door / paid)}.`);
+  if (T.inN) door.push(`${pct(T.freeN, T.inN)}% van de deurbezoekers kwam gratis binnen.`);
+  const bar = C.per.find(p => p.s.id === "bar");
+  if (bar && bar.s.on && bar.amount > 0 && visitors) door.push(`Dranken per bezoeker: ${eur(bar.amount / visitors)} bruto.`);
+  const food = C.per.find(p => p.s.id === "food");
+  if (food && food.s.on && food.amount > 0 && visitors) door.push(`Food per bezoeker: ${eur(food.amount / visitors)} bruto.`);
+  if (T.tipN) door.push(`${T.tipN} fooien voor ${eur(T.tipCash + T.tipCard)} (${eur(T.tipCash)} cash, ${eur(T.tipCard)} Bancontact).`);
+  L.push(["Bezoekers & verkoop", door]);
+  // uren
+  const tim = [];
+  if (doorTs.length){
+    tim.push(`Eerste deurbezoeker om ${hm(doorTs[0])}, laatste om ${hm(doorTs[doorTs.length-1])}.`);
+    let best = 0, bi = 0, j = 0; for (let i = 0; i < doorTs.length; i++){ while (doorTs[i] - doorTs[j] > 3600000) j++; if (i - j + 1 > best){ best = i - j + 1; bi = j; } }
+    tim.push(`Drukste uur aan de deur: vanaf <b>${hm(doorTs[bi])}</b> met ${best} mensen (${pct(best, doorTs.length)}% van alle deurbezoekers).`);
+    if (bb){ const pk = bb.B.reduce((a,b) => (b.cash+b.card+b.free) > (a.cash+a.card+a.free) ? b : a); tim.push(`Drukste ${bb.size === 900000 ? "kwartier" : "halfuur"}: ${hm(pk.t)}–${hm(pk.t + bb.size)} met ${pk.cash+pk.card+pk.free} mensen.`); }
+    if (doorTs.length >= 4){ const q1 = doorTs[Math.floor(doorTs.length*.25)], q3 = doorTs[Math.floor(doorTs.length*.75)]; tim.push(`De helft van de deurbezoekers kwam binnen tussen ${hm(q1)} en ${hm(q3)}.`); }
+    if (ev.startTime){ const s0 = doorTs[0]; tim.push(`Om ${hm(doorTs[Math.floor(doorTs.length/2)])} was de helft van de deurbezoekers binnen.`); }
+  }
+  const lv = priceLevels(C).filter(x => x.perHour !== null);
+  if (lv.length > 1){
+    const bestL = lv.slice().sort((a,b) => b.perHour * b.price - a.perHour * a.price)[0];
+    tim.push(`De deurprijs veranderde ${lv.length - 1} keer. Meeste omzet per uur aan ${eur(bestL.price)}: ${Math.round(bestL.perHour)} tickets per uur.`);
+  }
+  if (tim.length) L.push(["Uren & prijzen", tim]);
+  // personeel
+  const st = staffStats(C); const staff = [];
+  const ranked = st.filter(s => s.perHour).sort((a,b) => b.perHour - a.perHour);
+  if (st.length > 1){ const e = st.map(x => ({x, f: x.selfX + x.corr + x.tapsNoSumup + x.sumupNoTap})).sort((a,b) => a.f - b.f); if (e[0].f !== e[e.length-1].f) staff.push(`Minste fouten: <b>${esc(who(e[0].x.uid))}</b> (${e[0].f}), meeste: <b>${esc(who(e[e.length-1].x.uid))}</b> (${e[e.length-1].f}).`); }
+  if (ranked.length > 1){ const a = ranked[0], b = ranked[ranked.length-1]; staff.push(`Snelste tempo: <b>${esc(who(a.uid))}</b> met ${Math.round(a.perHour)} registraties per actief uur, tegenover ${Math.round(b.perHour)} bij ${esc(who(b.uid))} (${(a.perHour/b.perHour).toFixed(1).replace(".",",")}× zo snel).`); }
+  st.forEach(s => {
+    const bits = [`${s.n} registraties`];
+    if (s.perHour) bits.push(`${Math.round(s.perHour)} per actief uur`);
+    bits.push(`piek ${s.peak} in één uur`);
+    if (s.med >= 1) bits.push(`${Math.round(s.med)} s tussen twee klanten bij drukte`);
+    bits.push(`${s.selfX + s.corr + s.tapsNoSumup + s.sumupNoTap} fouten`);
+    if (s.selfX) bits.push(`${s.selfX} zelf geannuleerd`);
+    if (s.corr) bits.push(`${s.corr} gecorrigeerd door management`);
+    if (s.tapsNoSumup || s.sumupNoTap) bits.push(`<span class="tag bad">${s.tapsNoSumup + s.sumupNoTap} SumUp-verschil${s.tapsNoSumup + s.sumupNoTap === 1 ? "" : "len"}</span>`);
+    if (s.first) bits.push(`actief ${hm(s.first)}–${hm(s.last)}`);
+    staff.push(`<b>${esc(who(s.uid))}</b>: ${bits.join(" · ")}.`);
+  });
+  if (staff.length) L.push(["Personeel", staff]);
+  // controle
+  const ctl = [];
+  const expect = num(ev.float) + T.allCash + T.tipCash;
+  if (!blank(ev.counted)){ const d = num(ev.counted) - expect; ctl.push(Math.abs(d) < 0.01 ? `Kassatelling klopt: ${eur(num(ev.counted))}.` : `Kassatelling: ${eur(num(ev.counted))} geteld, ${eur(expect)} verwacht. <span class="tag bad">${d < 0 ? "Tekort" : "Teveel"} ${eur(Math.abs(d))}</span>`); }
+  else ctl.push(`Verwacht in de kassa: ${eur(expect)}. Vul het getelde bedrag in bij Opvallend.`);
+  const rc = S.recon[ev.id];
+  if (rc){ const r = rc.result; const a = Object.values(r.byUid).reduce((s,v)=>s+(v.taps||[]).length,0), b = Object.values(r.byUid).reduce((s,v)=>s+(v.tx||[]).length,0) + (r.orphan||[]).length; ctl.push(a || b ? `SumUp: ${r.matched} betalingen gekoppeld, ${a} tikken zonder betaling en ${b} betalingen zonder tik.` : `SumUp: alle ${r.matched} betalingen kloppen met de tikken.`); }
+  else ctl.push("SumUp is nog niet vergeleken.");
+  ctl.push(`${C.rows.filter(r => r.self).length} annulaties door de kassa, ${C.rows.filter(r => r.c && !r.self).length} correcties door management, ${C.rows.filter(r => r.e.n).length} notities.`);
+  L.push(["Controle", ctl]);
+  box.innerHTML = `<div class="bar"><h2>${final ? "Rapport" : "Voorlopig rapport"} · ${esc(ev.name)}${ev.date ? " · " + esc(ev.date) : ""}</h2><div class="spacer"></div><button class="btn" id="rp-dl">Downloaden</button></div>` +
+    L.map(([h, items]) => items.length ? `<h3>${h}</h3><ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>` : "").join("");
+  const text = L.map(([h, items]) => h.toUpperCase() + "\n" + items.map(i => "• " + i.replace(/<[^>]+>/g, "")).join("\n")).join("\n\n");
+  $("#rp-dl").onclick = () => saveFile(`BEPCAL rapport ${ev.name} ${ev.date||""}.txt`.replace(/[\\/:*?"<>|]/g,"-"), `BEPCAL · ${ev.name} · ${ev.date||""}${ev.location ? " · " + ev.location : ""}\n\n` + text);
+}
+async function saveFile(filename, data){
+  try{
+    const blob = new Blob([data], {type: filename.endsWith(".csv") ? "text/csv;charset=utf-8" : "text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob); const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }catch{ flash("Downloaden is niet gelukt"); }
+}
+async function exportCsv(){
+  const C = compute(S.sel); if (!C) return;
+  const lines = [["tijd","medewerker","station","type","bedrag","origineel","correctie","reden","notitie"].join(";")];
+  C.rows.slice().reverse().forEach(r => lines.push([new Date(r.e.t).toLocaleString("nl-BE"), who(r.uid), r.s||"door", r.e.k==="tip"?"fooi "+(r.e.m||"cash"):KIND[r.k], String(r.p).replace(".",","), KIND[r.e.k], r.c ? (r.c.action==="void"?"geannuleerd":KIND[r.c.action]) : "", (r.c&&r.c.reason)||"", r.e.n||""].map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")));
+  await saveFile(`BEPCAL ${C.ev.name} ${C.ev.date||""}.csv`.replace(/[\\/:*?"<>|]/g,"-"), lines.join("\n"));
+}
+
+/* ----- celebration & sound ----- */
+function unlockAudio(){ try{ if (!S.audio){ const A = window.AudioContext || window.webkitAudioContext; if (A) S.audio = new A(); } if (S.audio && S.audio.state === "suspended") S.audio.resume(); }catch{} }
+function chime(soft){
+  if (!S.sound || !S.audio) return;
+  const ctx = S.audio, now = ctx.currentTime;
+  [[880,0],[1318.5,.18]].concat(soft ? [] : [[880,.5],[1318.5,.68]]).forEach(([f, d]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0, now + d); g.gain.linearRampToValueAtTime(.35, now + d + .01); g.gain.exponentialRampToValueAtTime(.001, now + d + .45);
+    o.connect(g).connect(ctx.destination); o.start(now + d); o.stop(now + d + .5);
+  });
+}
+function celebrate(C){
+  chime(false); vibrate([120,80,120,80,240]);
+  const d = document.createElement("div"); d.className = "party"; d.setAttribute("role","alert");
+  d.innerHTML = `<h1>BREAK-EVEN</h1><p>${hm(Date.now())} · ${eur0(C.net)} netto binnen</p><p style="opacity:.75;font-size:13px">Tik om verder te gaan</p>`;
+  d.onclick = () => d.remove(); document.body.appendChild(d); setTimeout(() => d.remove(), 6000);
+}
+
+/* ----- sheet ----- */
+function sheet(html, init){
+  closeSheet();
+  const s = document.createElement("div"); s.className = "sheet"; s.id = "sheet";
+  s.innerHTML = `<div class="in" role="dialog" aria-modal="true">${html}</div>`;
+  s.addEventListener("click", e => { if (e.target === s) closeSheet(); });
+  document.body.appendChild(s); init && init(s);
+  const f = s.querySelector("input,textarea,button"); f && f.focus();
+}
+function closeSheet(){ const s = $("#sheet"); if (s) s.remove(); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+boot();
+})();
+</script>
+
+</body>
+</html>
