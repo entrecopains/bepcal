@@ -73,6 +73,12 @@ button:focus-visible, .opt:focus-within, .scale label:focus-within { outline: 2p
 .welcome ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px }
 .welcome li { position: relative; padding-left: 24px; font-size: 16px; font-weight: 600; font-stretch: 110%; line-height: 1.45 }
 .welcome li::before { content: ""; position: absolute; left: 0; top: .5em; width: 10px; height: 10px; border-radius: 50%; background: var(--red) }
+.opt.disabled { opacity: .35; cursor: not-allowed }
+.teller { font-size: 13px; color: var(--soft); margin: 10px 0 0 }
+.teller.vol { display: inline-block; color: var(--white); background: var(--red); font-weight: 700; padding: 5px 12px; border-radius: 999px }
+.opt.opt-go { background: var(--white); color: var(--blue); font-weight: 800; letter-spacing: .03em; border-radius: 999px; padding: 12px 18px; margin-bottom: 8px; box-shadow: 0 0 0 3px var(--red) }
+.opt.opt-go:hover { background: var(--white); filter: brightness(.95) }
+.opt.opt-go input { accent-color: var(--red) }
 .otherwrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0 }
 .opt input.othertxt { width: 100%; height: auto; margin-top: 0; flex: none; font: inherit; color: var(--white); background: rgba(255,255,255,.08); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px }
 .opt input.othertxt::placeholder { color: var(--soft) }
@@ -456,6 +462,7 @@ function vraag(q) {
       inp.checked = q.type === 'mc' ? v === o : Array.isArray(v) && v.includes(o);
       inp.addEventListener('change', () => opslaan(q, el));
       const s = document.createElement('span'); s.textContent = o;
+      if (o.startsWith('➜')) l.classList.add('opt-go');
       l.append(inp, s); box.appendChild(l);
     });
     if (q.other) {
@@ -465,11 +472,12 @@ function vraag(q) {
       const s = document.createElement('span'); s.textContent = ANDER_LABEL;
       const txt = document.createElement('input'); txt.type = 'text'; txt.id = id + '_othertxt'; txt.className = 'othertxt'; txt.placeholder = 'Type it here'; txt.value = eigen || '';
       inp.addEventListener('change', () => opslaan(q, el));
-      txt.addEventListener('input', () => { inp.checked = !!txt.value.trim(); opslaan(q, el) });
+      txt.addEventListener('input', () => { if (!inp.disabled) inp.checked = !!txt.value.trim(); opslaan(q, el) });
       const wrap = document.createElement('span'); wrap.className = 'otherwrap'; wrap.append(s, txt);
       l.append(inp, wrap); box.appendChild(l);
     }
     el.appendChild(box);
+    if (q.type === 'cb' && q.max) { const tel = document.createElement('p'); tel.className = 'teller'; el.appendChild(tel); }
   } else if (q.type === 'scale') {
     const box = document.createElement('div'); box.className = 'scale';
     for (let n = 1; n <= 5; n++) {
@@ -488,7 +496,21 @@ function vraag(q) {
     inp.addEventListener('input', () => opslaan(q, el)); el.appendChild(inp);
   }
   const e = document.createElement('div'); e.className = 'err'; e.hidden = true; el.appendChild(e);
+  if (q.type === 'cb' && q.max) limiet(q, el);
   return el;
+}
+
+// Maximum bereikt: de andere vakjes zijn niet meer aan te klikken tot er één wordt uitgevinkt
+function limiet(q, el) {
+  const boxes = Array.from(el.querySelectorAll('input[type=checkbox]'));
+  const n = boxes.filter(b => b.checked).length, vol = n >= q.max;
+  boxes.forEach(b => {
+    b.disabled = vol && !b.checked;
+    b.closest('.opt').classList.toggle('disabled', b.disabled);
+    if (b.dataset.other) { const t = el.querySelector('.othertxt'); if (t) t.disabled = b.disabled; }
+  });
+  const tel = el.querySelector('.teller');
+  if (tel) { tel.classList.toggle('vol', vol); tel.textContent = vol ? 'Maximum reached: untick one to choose another.' : n + ' of ' + q.max + ' chosen'; }
 }
 
 function opslaan(q, el) {
@@ -498,6 +520,7 @@ function opslaan(q, el) {
     const ow = el.querySelector('[data-other]'), txt = el.querySelector('.othertxt');
     if (ow && ow.checked && txt.value.trim()) lijst.push(txt.value.trim());
     ans[q.title] = lijst;
+    if (q.max) limiet(q, el);
   }
   else if (q.type === 'mc' || q.type === 'scale') { const c = Array.from(ins).find(i => i.checked); ans[q.title] = c ? c.value : '' }
   else ans[q.title] = ins[0].value.trim();
