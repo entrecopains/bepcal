@@ -28,8 +28,8 @@ body { min-height: 100vh; color: var(--white); font-family: var(--body); font-si
 .top { display: flex; justify-content: flex-start; align-items: baseline; gap: 12px; flex-wrap: wrap }
 .mark { font-family: var(--display); color: var(--red); letter-spacing: .02em; font-size: 18px; border-left: 1px solid var(--red); padding-left: 10px }
 .badge { font-family: var(--display); font-size: 11px; letter-spacing: .08em; opacity: .75; text-transform: uppercase; color: var(--soft) }
-.progress { height: 3px; background: var(--line); overflow: hidden }
-.progress > i { display: block; height: 100%; background: var(--red); transition: width .3s }
+.progress { height: 8px; background: rgba(255,255,255,.18); border-radius: 99px; overflow: hidden }
+.progress > i { display: block; height: 100%; border-radius: 99px; background: var(--red); transition: width .3s }
 .step { font-family: var(--display); font-size: 14px; color: var(--soft); font-variant-numeric: tabular-nums; letter-spacing: .06em; text-transform: uppercase }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 22px }
 .head { background: transparent; border: 0; padding: 18px 0 8px }
@@ -423,10 +423,12 @@ function render() {
   $('back').hidden = hist.length === 1;
   $('next').textContent = p.id === 'W' ? START_KNOP : p.id === 'E' ? 'Submit' : 'Next';
   $('next').disabled = false;
-  const vast = ['W', 'A', 'B', 'N1', 'X', 'T', 'D', 'E'].indexOf(p.id);
-  const pct = vast > -1 ? [0, 8, 20, 26, 66, 74, 86, 96][vast] : 32 + Math.max(p.k, 2) * 12;
+  // Voortgang: springt vlot vooruit en gaat nooit achteruit binnen het pad
+  const ruw = id => { const v = ['W', 'A', 'B', 'N1', 'X', 'T', 'D', 'E'].indexOf(id); if (v > -1) return [0, 12, 26, 34, 70, 76, 88, 96][v];
+    const q = pagina(id); return q.k === 0 ? 48 : q.k === 1 ? 62 : 0; };
+  const pct = hist.reduce((m, id) => Math.max(m, ruw(id)), 0);
   $('bar').style.width = pct + '%';
-  $('step').textContent = p.id === 'W' ? 'Welcome' : 'Section ' + (hist.length - 1);
+  $('step').textContent = p.id === 'W' ? 'Welcome' : pct >= 85 ? 'Almost there · ' + pct + '% done' : pct + '% done';
   window.scrollTo({ top: 0 });
 }
 
