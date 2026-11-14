@@ -338,9 +338,11 @@ const TICKETS_EXTRA = [
   mc(TITEL_PAKKET, [PAKKET_15, PAKKET_25, PAKKET_40, 'Depends on what\'s included']),
   Object.assign(mc(TITEL_DATUM, ['Yes', 'Maybe', DATUM_NEE]), { scenario: true })
 ];
-function ticketVervolg() {
+function pakketVervolg() {
+  return (ans[TITEL_PAKKET] === PAKKET_25 || ans[TITEL_PAKKET] === PAKKET_40) ? [mc(TITEL_KRIMP, ['Yes', 'Maybe', 'No'])] : [];
+}
+function datumVervolg() {
   const v = [];
-  if (ans[TITEL_PAKKET] === PAKKET_25 || ans[TITEL_PAKKET] === PAKKET_40) v.push(mc(TITEL_KRIMP, ['Yes', 'Maybe', 'No']));
   if (ans[TITEL_DATUM] && ans[TITEL_DATUM] !== DATUM_NEE) {
     v.push(mc(TITEL_WEEK, ['4 weeks before (€5)', '3 weeks before (€10)', 'In the last 2 weeks (€15)', 'At the door (€20)']));
     v.push(mc(TITEL_DEADLINE, ['Yes, I\'d get my friends to buy together before the deadline', 'Maybe', 'No, I\'d just buy my own ticket', 'No, I\'d still wait until my friends decide']));
@@ -364,8 +366,7 @@ const STANDOUT = [
 ];
 
 // Nieuwe vragen horen bij het pad van hun topic (14/11/2026)
-DIEPTE.prijs.vragen.push(...TICKETS_EXTRA);
-DIEPTE.muziek.vragen.push(mc(TITEL_KEUZE, [KEUZE_NAAM, KEUZE_ANDERS]));
+DIEPTE.prijs.vragen.push(TICKETS_EXTRA[0]);   // pakketvraag enkel in het prijspad
 
 // ========== DEEL D: VOOR IEDEREEN ==========
 const NA = [
@@ -422,11 +423,14 @@ function pagina(id) {
     { type: 'mc', title: TITEL_ZWAARST, options: topKeys().map(labelOf), required: true, help: ZWAARST_HELP }] };
   if (id === 'X') return { id, titel: SECTIE_B_TITEL, intro: '', vragen: [
     { type: 'mc', title: TITEL_X, options: [X_NEE].concat(REDENEN.filter(r => !gedaan().includes(r.key)).map(r => r.label)), required: true, help: X_HELP }] };
-  if (id === 'T') return { id, titel: SECTIE_T_TITEL, intro: SECTIE_T_INTRO, vragen: TICKETS };
-  if (id === 'D') return { id, titel: SECTIE_D_TITEL, intro: SECTIE_D_INTRO, vragen: NA };
+  if (id === 'T') return { id, titel: SECTIE_T_TITEL, intro: SECTIE_T_INTRO, vragen: TICKETS.concat([TICKETS_EXTRA[1]]) };
+  if (id === 'T2') return { id, titel: SECTIE_T_TITEL, intro: '', vragen: datumVervolg() };
+  if (id === 'K') return { id, titel: SECTIE_D_TITEL, intro: SECTIE_D_INTRO, vragen: [mc(TITEL_KEUZE, [KEUZE_NAAM, KEUZE_ANDERS])] };
+  if (id === 'S') return { id, titel: SECTIE_D_TITEL, intro: '', vragen: STANDOUT };
+  if (id === 'D') return { id, titel: SECTIE_D_TITEL, intro: '', vragen: NA };
   // Extra vervolgpagina binnen een topic (id = Z|soort|volgende pagina)
   if (id.startsWith('Z|')) { const soort = id.split('|')[1];
-    return soort === 'muziek' ? { id, titel: DIEPTE.muziek.titel, intro: '', vragen: STANDOUT } : { id, titel: DIEPTE.prijs.titel, intro: '', vragen: ticketVervolg() }; }
+    return { id, titel: DIEPTE.prijs.titel, intro: '', vragen: pakketVervolg() }; }
   if (id === 'E') return { id, titel: SECTIE_E_TITEL, intro: '', vragen: EINDE };
   // Verdieping van een reden
   const key = id.slice(2), d = DIEPTE[key];
@@ -458,12 +462,14 @@ function volgende(p) {
   if (p.key) {
     const n = volgendeNaTopic(p);
     if (!n) return n;
-    if (p.key === 'muziek' && ans[TITEL_KEUZE] === KEUZE_ANDERS) return 'Z|muziek|' + n;
-    if (p.key === 'prijs' && ticketVervolg().length) return 'Z|prijs|' + n;
+    if (p.key === 'prijs' && pakketVervolg().length) return 'Z|prijs|' + n;
     return n;
   }
   if (p.id === 'X') { const x = ans[TITEL_X]; return !x ? null : x === X_NEE ? 'T' : 'R:' + keyOf(x) }
-  if (p.id === 'T') return 'D';
+  if (p.id === 'T') return datumVervolg().length ? 'T2' : 'K';
+  if (p.id === 'T2') return 'K';
+  if (p.id === 'K') return !ans[TITEL_KEUZE] ? null : ans[TITEL_KEUZE] === KEUZE_ANDERS ? 'S' : 'D';
+  if (p.id === 'S') return 'D';
   if (p.id === 'D') return 'E';
   if (p.id.startsWith('Z|')) return p.id.split('|').slice(2).join('|');
   return null;
@@ -490,7 +496,7 @@ function render() {
   $('next').textContent = p.id === 'W' ? START_KNOP : p.id === 'E' ? 'Submit' : 'Next';
   $('next').disabled = false;
   // Voortgang: springt vlot vooruit en gaat nooit achteruit binnen het pad
-  const ruw = id => { const v = ['W', 'A', 'B', 'N1', 'X', 'T', 'D', 'E'].indexOf(id); if (v > -1) return [0, 12, 26, 34, 70, 76, 86, 96][v];
+  const ruw = id => { const v = ['W', 'A', 'B', 'N1', 'X', 'T', 'T2', 'K', 'S', 'D', 'E'].indexOf(id); if (v > -1) return [0, 12, 26, 34, 70, 74, 77, 80, 83, 88, 96][v];
     if (id.startsWith('Z|')) return 0;
     const q = pagina(id); return q.k === 0 ? 48 : q.k === 1 ? 62 : 0; };
   const pct = hist.reduce((m, id) => Math.max(m, ruw(id)), 0);
