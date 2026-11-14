@@ -200,6 +200,8 @@ const ALGEMEEN = [
 const DREMPELS = cb(TITEL_DREMPELS, REDENEN.map(r => r.label).concat([NIETS]), 3, 'Tick up to 3 reasons.');
 
 // ========== DEEL C: VERDIEPING PER REDEN ==========
+const TITEL_VRIENDEN = 'Your friends don\'t go out anymore, but you\'d still like to. What could a party do to make you go anyway?';
+const TITEL_LEVEN = 'What would concretely help you to go out again?';
 const DIEPTE = {
   prijs: {
     titel: 'About the price', intro: 'A closer look at what going out costs.', vragen: [
@@ -264,7 +266,8 @@ const DIEPTE = {
       cbx('What plays a role for you?', ['My friends go out less or not at all anymore', 'The crowd is too young', 'The crowd is too old', 'I don\'t know anyone there', 'The atmosphere between people isn\'t great', 'Too busy and too crowded', 'Too empty']),
       mc('How many people do you usually go out with?', ['Alone', 'With 1 person', 'With 2 to 4', 'With 5 or more']),
       mc('Would you go alone if you knew it\'s easy to meet people there?', ['Yes', 'Maybe', 'No']),
-      mc('Which crowd feels right to you?', ['Mostly 18 to 21', 'Mostly 22 to 25', 'Mostly 26 to 30', 'Mostly 30+', 'Mixed'])
+      mc('Which crowd feels right to you?', ['Mostly 18 to 21', 'Mostly 22 to 25', 'Mostly 26 to 30', 'Mostly 30+', 'Mixed']),
+      cbx(TITEL_VRIENDEN, ['Clearly letting people know you\'re welcome on your own', 'Help me find others who are going alone (e.g. a group chat before the party)', 'A host or welcome moment that brings people together', 'Activities that make it easy to start a conversation', 'A smaller party where you quickly feel at home', 'Knowing the crowd is people like me', 'Nothing: without my friends, I don\'t go'], 2)
     ]
   },
   veiligheid: {
@@ -278,7 +281,8 @@ const DIEPTE = {
     titel: 'About your life right now', intro: 'Life changes. Tell us what changed for you.', vragen: [
       cbx('What has changed for you?', ['A new or busier job', 'Kids or a growing family', 'A relationship', 'Studies', 'I moved further away', 'Other priorities (sport, health, saving money)']),
       cbx('When would going out fit in?', ['Friday night', 'Saturday night', 'Sunday afternoon', 'A weeknight after work', 'During holidays', 'Only on special occasions']),
-      mc('How often would you realistically like to go out?', ['Less than once a month', 'Once a month', 'Twice a month', '3 times a month or more'])
+      mc('How often would you realistically like to go out?', ['Less than once a month', 'Once a month', 'Twice a month', '3 times a month or more']),
+      cbx(TITEL_LEVEN, ['A night that ends early, so I\'m fit the next day', 'An afterwork party, straight from my job', 'A day party in the afternoon', 'Knowing the date well in advance, so I can plan it', 'Short and intense: a few hours, but really good', 'A crowd in the same stage of life as me'], 2)
     ]
   },
   anders: {
