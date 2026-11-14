@@ -317,7 +317,7 @@ const TITEL_PAKKET = 'Which ticket would you rather buy?';
 const PAKKET_15 = '€15: entry only, you pay for everything else at the party';
 const PAKKET_25 = '€25: entry, cloakroom, toilets and 2 drinks included, cheaper than buying it all separately';
 const PAKKET_40 = '€40: all-in, with unlimited basic drinks (beer, wine, cava, soft drinks), cloakroom and toilets included';
-const TITEL_KRIMP = 'If the package included more the earlier you buy (e.g. an extra drink or a gadget in the first week), would that make you buy earlier?';
+const TITEL_KRIMP = 'Imagine a package where the earlier you buy, the more is included (e.g. 3 drinks and a gadget in the first week, fewer extras closer to the party). Would that make you buy earlier?';
 const TITEL_DATUM = 'Would this system make you buy your ticket earlier?';
 const DATUM_NEE = 'No, I\'d still decide late';
 const TITEL_WEEK = 'In which week would you most likely buy your ticket?';
@@ -335,7 +335,8 @@ function scenarioHtml() {
     '<p><b>Reminder:</b> you get a message before each price goes up.</p>';
 }
 const TICKETS_EXTRA = [
-  mc(TITEL_PAKKET, [PAKKET_15, PAKKET_25, PAKKET_40, 'Depends on what\'s included']),
+  cb(TITEL_PAKKET, [PAKKET_15, PAKKET_25, PAKKET_40, 'Depends on what\'s included']),
+  mc(TITEL_KRIMP, ['Yes', 'Maybe', 'No', 'I\'m not interested in packages']),
   Object.assign(mc(TITEL_DATUM, ['Yes', 'Maybe', DATUM_NEE]), { scenario: true })
 ];
 function pakketVervolg() {
@@ -366,7 +367,7 @@ const STANDOUT = [
 ];
 
 // Nieuwe vragen horen bij het pad van hun topic (14/11/2026)
-DIEPTE.prijs.vragen.push(TICKETS_EXTRA[0]);   // pakketvraag enkel in het prijspad
+DIEPTE.prijs.vragen.push(TICKETS_EXTRA[0], TICKETS_EXTRA[1]);   // pakketvragen enkel in het prijspad
 
 // ========== DEEL D: VOOR IEDEREEN ==========
 const NA = [
@@ -423,7 +424,7 @@ function pagina(id) {
     { type: 'mc', title: TITEL_ZWAARST, options: topKeys().map(labelOf), required: true, help: ZWAARST_HELP }] };
   if (id === 'X') return { id, titel: SECTIE_B_TITEL, intro: '', vragen: [
     { type: 'mc', title: TITEL_X, options: [X_NEE].concat(REDENEN.filter(r => !gedaan().includes(r.key)).map(r => r.label)), required: true, help: X_HELP }] };
-  if (id === 'T') return { id, titel: SECTIE_T_TITEL, intro: SECTIE_T_INTRO, vragen: TICKETS.concat([TICKETS_EXTRA[1]]) };
+  if (id === 'T') return { id, titel: SECTIE_T_TITEL, intro: SECTIE_T_INTRO, vragen: TICKETS.concat([TICKETS_EXTRA[2]]) };
   if (id === 'T2') return { id, titel: SECTIE_T_TITEL, intro: '', vragen: datumVervolg() };
   if (id === 'K') return { id, titel: SECTIE_D_TITEL, intro: SECTIE_D_INTRO, vragen: [mc(TITEL_KEUZE, [KEUZE_NAAM, KEUZE_ANDERS])] };
   if (id === 'S') return { id, titel: SECTIE_D_TITEL, intro: '', vragen: STANDOUT };
@@ -462,7 +463,6 @@ function volgende(p) {
   if (p.key) {
     const n = volgendeNaTopic(p);
     if (!n) return n;
-    if (p.key === 'prijs' && pakketVervolg().length) return 'Z|prijs|' + n;
     return n;
   }
   if (p.id === 'X') { const x = ans[TITEL_X]; return !x ? null : x === X_NEE ? 'T' : 'R:' + keyOf(x) }
