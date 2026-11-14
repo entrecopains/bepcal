@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
-<title>Tell us about the water · test</title>
-<meta name="robots" content="noindex">
+<title>Uitgaansenquête testversie</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Archivo:ital,wdth,wght@0,100..125,400..900;1,100..125,400..900&display=swap">
 <style>
@@ -313,9 +313,19 @@ const TICKETS = [
   mc('How much cheaper should a presale ticket be for you to buy it weeks in advance?', ['€2 - €3', '€4 - €5', '€6 - €10', 'More than €10', 'A discount won\'t change when I buy'])
 ];
 
+// ========== NAAM OF IETS ANDERS (toegevoegd 14/11/2026) ==========
+const TITEL_KEUZE = 'Two nights, same ticket price. Which one would you choose?';
+const KEUZE_NAAM = 'A night with a well-known DJ as headliner';
+const KEUZE_ANDERS = 'A night without well-known names, but with something else that stands out (e.g. a unique location, setup or theme)';
+const STANDOUT = [
+  cbx('You chose something that stands out over a well-known DJ name. What could that be, so you\'d buy your ticket?', ['An unusual location where you\'d never expect a party', 'A secret location, revealed shortly before', 'A setup or production I\'ve never seen before', 'A theme night with its own atmosphere', 'A party where everyone dresses up for the theme', 'Lots of activities besides dancing', 'A live act or performance next to the DJs', 'A niche sound you can\'t find anywhere else', 'A secret line-up', 'An exclusive party you can only get into through a group, list or invite', 'It only happens a few times a year, so I don\'t want to miss it'], 2)
+];
+
 // ========== DEEL D: VOOR IEDEREEN ==========
 const NA = [
   cbx('What music do you most like to hear at a party?', ['House', 'Tech house', 'Techno', 'Hard techno / hardstyle', 'Trance / progressive', 'Melodic / deep house', 'Afro house', 'Disco / funk', 'UK garage / bass', 'Hip hop / R&B', 'Afrobeats / amapiano', 'Reggaeton / Latin', 'Drum and bass', 'Commercial / chart hits', 'Throwbacks and classics'], 3),
+  mc(TITEL_KEUZE, [KEUZE_NAAM, KEUZE_ANDERS]),
+  cbx('After a great first time, what makes you come back to a concept?', ['The same quality, every time', 'Something new or surprising each edition', 'It became my crowd: familiar faces', 'A recognisable sound and resident DJs', 'The setup or production gets better every time', 'Little extras and surprises during the night (giveaways, unexpected moments)'], 2),
   cb('Which format appeals to you most?', ['Classic club night (11 pm - 5 am)', 'Early clubbing (8 pm - 2 am)', 'Day party or afterwork', 'Open air', 'Small bar with a DJ', 'Festival', 'Theme party'], 3),
   cbx('What decides which club or party you go to?', ['It\'s close by or easy to reach', 'The vibe and the crowd', 'The music genre', 'The line-up or a specific DJ', 'Where my friends are going', 'The price', 'The venue itself'], 3),
   mc('Where do you prefer to go out?', ['A club', 'A bar or café with a DJ', 'Both, depends on the night']),
@@ -370,6 +380,7 @@ function pagina(id) {
     { type: 'mc', title: TITEL_X, options: [X_NEE].concat(REDENEN.filter(r => !gedaan().includes(r.key)).map(r => r.label)), required: true, help: X_HELP }] };
   if (id === 'T') return { id, titel: SECTIE_T_TITEL, intro: SECTIE_T_INTRO, vragen: TICKETS };
   if (id === 'D') return { id, titel: SECTIE_D_TITEL, intro: SECTIE_D_INTRO, vragen: NA };
+  if (id === 'S') return { id, titel: SECTIE_D_TITEL, intro: '', vragen: STANDOUT };
   if (id === 'E') return { id, titel: SECTIE_E_TITEL, intro: '', vragen: EINDE };
   // Verdieping van een reden
   const key = id.slice(2), d = DIEPTE[key];
@@ -399,7 +410,8 @@ function volgende(p) {
   }
   if (p.id === 'X') { const x = ans[TITEL_X]; return !x ? null : x === X_NEE ? 'T' : 'R:' + keyOf(x) }
   if (p.id === 'T') return 'D';
-  if (p.id === 'D') return 'E';
+  if (p.id === 'D') return ans[TITEL_KEUZE] === KEUZE_ANDERS ? 'S' : 'E';
+  if (p.id === 'S') return 'E';
   return null;
 }
 
@@ -424,7 +436,7 @@ function render() {
   $('next').textContent = p.id === 'W' ? START_KNOP : p.id === 'E' ? 'Submit' : 'Next';
   $('next').disabled = false;
   // Voortgang: springt vlot vooruit en gaat nooit achteruit binnen het pad
-  const ruw = id => { const v = ['W', 'A', 'B', 'N1', 'X', 'T', 'D', 'E'].indexOf(id); if (v > -1) return [0, 12, 26, 34, 70, 76, 88, 96][v];
+  const ruw = id => { const v = ['W', 'A', 'B', 'N1', 'X', 'T', 'D', 'S', 'E'].indexOf(id); if (v > -1) return [0, 12, 26, 34, 70, 76, 86, 92, 96][v];
     const q = pagina(id); return q.k === 0 ? 48 : q.k === 1 ? 62 : 0; };
   const pct = hist.reduce((m, id) => Math.max(m, ruw(id)), 0);
   $('bar').style.width = pct + '%';
